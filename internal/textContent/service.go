@@ -17,17 +17,17 @@ type TextContentStore interface {
 	GetTextContent(string) (TextContent, error)
 }
 
-type Service struct {
+type TextContentService struct {
 	Store TextContentStore
 }
 
-func NewService(store TextContentStore) *Service {
-	return &Service{
+func NewService(store TextContentStore) *TextContentService {
+	return &TextContentService{
 		Store: store,
 	}
 }
 
-func (s *Service) GetTextContent(slug string) (TextContent, error) {
+func (s *TextContentService) GetTextContent(slug string) (TextContent, error) {
 	// calls store passing in the context
 	textContent, err := s.Store.GetTextContent(slug)
 	if err != nil {

@@ -10,7 +10,8 @@ import (
 	"net/http"
 
 	"rsbruce/blogsite-api/internal/database"
-	"rsbruce/blogsite-api/internal/service/textContent"
+	"rsbruce/blogsite-api/internal/postFeedItem"
+	"rsbruce/blogsite-api/internal/textContent"
 	"rsbruce/blogsite-api/internal/transport"
 
 	"github.com/gorilla/mux"
@@ -68,8 +69,11 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	textContentHandler := transport.NewTextContentHandler(textContentService)
 	r.HandleFunc("/text-content/{slug}", textContentHandler.Get)
 
-	r.HandleFunc("/about", aboutHandler)
-	r.HandleFunc("/latest-posts", latestPostsHandler)
+	postFeedItemsService := postFeedItem.NewService(db)
+	postFeedItemHandler := transport.NewPostFeedItemHandler(postFeedItemsService)
+	r.HandleFunc("/latest-posts/{handle}", postFeedItemHandler.GetLatestForAuthor)
+	r.HandleFunc("/latest-posts", postFeedItemHandler.GetLatestAllAuthors)
+
 	r.HandleFunc("/user/{handle}", singleUserProfileHandler)
 	r.HandleFunc("/post/{slug}", singlePostHandler)
 

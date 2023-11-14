@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"rsbruce/blogsite-api/internal/service/textContent"
+	"rsbruce/blogsite-api/internal/textContent"
 )
 
 type TextContentRow struct {

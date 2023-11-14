@@ -5,14 +5,14 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"rsbruce/blogsite-api/internal/service/textContent"
+	"rsbruce/blogsite-api/internal/textContent"
 )
 
 type TextContentHandler struct {
 	Get func(w http.ResponseWriter, r *http.Request)
 }
 
-func NewTextContentHandler(service *textContent.Service) TextContentHandler {
+func NewTextContentHandler(service *textContent.TextContentService) TextContentHandler {
 	var handler TextContentHandler
 	handler.Get = func(w http.ResponseWriter, r *http.Request) {
 		params := mux.Vars(r)

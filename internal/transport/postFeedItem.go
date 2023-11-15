@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"rsbruce/blogsite-api/internal/postFeedItem"
+	"rsbruce/blogsite-api/internal/models"
 )
 
 type PostFeedItemHandler struct {
@@ -13,7 +13,7 @@ type PostFeedItemHandler struct {
 	GetLatestForAuthor  func(w http.ResponseWriter, r *http.Request)
 }
 
-func NewPostFeedItemHandler(service *postFeedItem.PostFeedItemService) PostFeedItemHandler {
+func NewPostFeedItemHandler(service *models.FeedItemService) PostFeedItemHandler {
 	var handler PostFeedItemHandler
 
 	handler.GetLatestAllAuthors = func(w http.ResponseWriter, r *http.Request) {

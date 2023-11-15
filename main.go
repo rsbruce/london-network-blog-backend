@@ -10,8 +10,7 @@ import (
 	"net/http"
 
 	"rsbruce/blogsite-api/internal/database"
-	"rsbruce/blogsite-api/internal/postFeedItem"
-	"rsbruce/blogsite-api/internal/textContent"
+	"rsbruce/blogsite-api/internal/models"
 	"rsbruce/blogsite-api/internal/transport"
 
 	"github.com/gorilla/mux"
@@ -65,16 +64,19 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 
 func setupRoutes(r *mux.Router, db *database.Database) {
 
-	textContentService := textContent.NewService(db)
+	textContentService := models.NewTextContentService(db)
 	textContentHandler := transport.NewTextContentHandler(textContentService)
 	r.HandleFunc("/text-content/{slug}", textContentHandler.Get)
 
-	postFeedItemsService := postFeedItem.NewService(db)
-	postFeedItemHandler := transport.NewPostFeedItemHandler(postFeedItemsService)
-	r.HandleFunc("/latest-posts/{handle}", postFeedItemHandler.GetLatestForAuthor)
-	r.HandleFunc("/latest-posts", postFeedItemHandler.GetLatestAllAuthors)
+	feedItemService := models.NewFeedItemService(db)
+	feedItemHandler := transport.NewPostFeedItemHandler(feedItemService)
+	r.HandleFunc("/latest-posts/{handle}", feedItemHandler.GetLatestForAuthor)
+	r.HandleFunc("/latest-posts", feedItemHandler.GetLatestAllAuthors)
 
-	r.HandleFunc("/user/{handle}", singleUserProfileHandler)
+	userService := models.NewUserService(db)
+	userProfileHandler := transport.NewUserProfileHandler(userService, feedItemService)
+	r.HandleFunc("/user/{handle}", userProfileHandler.Get)
+
 	r.HandleFunc("/post/{slug}", singlePostHandler)
 
 }

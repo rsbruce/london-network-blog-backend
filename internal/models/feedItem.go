@@ -1,4 +1,4 @@
-package postFeedItem
+package models
 
 import (
 	"errors"
@@ -28,22 +28,22 @@ type FeedItemUser struct {
 	Handle          string `json:"handle"`
 }
 
-type PostFeedItemStore interface {
+type FeedItemStore interface {
 	GetLatestPostFeed() ([]FeedItem, error)
 	GetFeedItemPostsForAuthor(string) ([]FeedItemPost, error)
 }
 
-type PostFeedItemService struct {
-	Store PostFeedItemStore
+type FeedItemService struct {
+	Store FeedItemStore
 }
 
-func NewService(store PostFeedItemStore) *PostFeedItemService {
-	return &PostFeedItemService{
+func NewFeedItemService(store FeedItemStore) *FeedItemService {
+	return &FeedItemService{
 		Store: store,
 	}
 }
 
-func (s *PostFeedItemService) GetLatestPostFeed() ([]FeedItem, error) {
+func (s *FeedItemService) GetLatestPostFeed() ([]FeedItem, error) {
 	feedItems, err := s.Store.GetLatestPostFeed()
 	if err != nil {
 		log.Fatalf("An error occured fetching the latest post feed: %s", err.Error())
@@ -52,7 +52,7 @@ func (s *PostFeedItemService) GetLatestPostFeed() ([]FeedItem, error) {
 	return feedItems, nil
 }
 
-func (s *PostFeedItemService) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, error) {
+func (s *FeedItemService) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, error) {
 	feedItemPosts, err := s.Store.GetFeedItemPostsForAuthor(handle)
 	if err != nil {
 		log.Fatalf("An error occured fetching the latest post feed for %s: %s", handle, err.Error())

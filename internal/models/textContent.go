@@ -1,4 +1,4 @@
-package textContent
+package models
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ type TextContentService struct {
 	Store TextContentStore
 }
 
-func NewService(store TextContentStore) *TextContentService {
+func NewTextContentService(store TextContentStore) *TextContentService {
 	return &TextContentService{
 		Store: store,
 	}

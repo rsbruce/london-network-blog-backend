@@ -15,6 +15,7 @@ type UserProfileHandler struct {
 func NewUserProfileHandler(userService *models.UserService, feedItemService *models.FeedItemService) UserProfileHandler {
 	var handler UserProfileHandler
 	handler.Get = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		params := mux.Vars(r)
 		handle := params["handle"]
 

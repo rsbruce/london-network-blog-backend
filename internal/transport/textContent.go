@@ -15,6 +15,7 @@ type TextContentHandler struct {
 func NewTextContentHandler(service *models.TextContentService) TextContentHandler {
 	var handler TextContentHandler
 	handler.Get = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		params := mux.Vars(r)
 		slug := params["slug"]
 

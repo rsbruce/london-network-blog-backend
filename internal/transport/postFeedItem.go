@@ -17,7 +17,7 @@ func NewPostFeedItemHandler(service *models.FeedItemService) PostFeedItemHandler
 	var handler PostFeedItemHandler
 
 	handler.GetLatestAllAuthors = func(w http.ResponseWriter, r *http.Request) {
-
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		post_feed, err := service.Store.GetLatestPostFeed()
 		if err != nil {
 			log.Fatal(err)
@@ -27,6 +27,7 @@ func NewPostFeedItemHandler(service *models.FeedItemService) PostFeedItemHandler
 	}
 
 	handler.GetLatestForAuthor = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		params := mux.Vars(r)
 		handle := params["handle"]
 

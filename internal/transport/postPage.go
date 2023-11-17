@@ -15,6 +15,7 @@ type PostPageHandler struct {
 func NewPostPageHandler(post_svc *models.PostService) PostPageHandler {
 	var handler PostPageHandler
 	handler.GetPostPage = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		params := mux.Vars(r)
 		slug := params["slug"]
 

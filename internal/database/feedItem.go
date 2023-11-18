@@ -107,7 +107,8 @@ func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]models.FeedItemP
         FROM post
         INNER JOIN user
         ON post.author_id = user.id
-        WHERE user.handle = ?`, handle)
+        WHERE user.handle = ?
+		ORDER BY created_at DESC`, handle)
 	if err != nil {
 		return nil, fmt.Errorf("postItemsByUserHandle %v", err)
 	}

@@ -52,3 +52,29 @@ func (db *Database) GetUser(handle string) (models.User, error) {
 
 	return userFromRow(user_row), nil
 }
+
+func (db *Database) UpdateUser(handle string, user models.User) (models.User, error) {
+
+	user_row := UserRow{
+		Handle:       sql.NullString{String: handle, Valid: true},
+		Display_name: sql.NullString{String: user.Display_name, Valid: true},
+		Blurb:        sql.NullString{String: user.Blurb, Valid: true},
+	}
+
+	rows, err := db.Client.NamedQuery(
+		`UPDATE user SET
+		blurb = :blurb,
+		display_name = :display_name
+		WHERE handle = :handle`,
+		user_row,
+	)
+
+	if err != nil {
+		return models.User{}, fmt.Errorf("UpdateUser %v", err)
+	}
+	if err := rows.Close(); err != nil {
+		return models.User{}, fmt.Errorf("failed to close rows: %w", err)
+	}
+
+	return userFromRow(user_row), nil
+}

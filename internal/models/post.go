@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrFetchingPostWithUser = errors.New("Could not retrieve post with user")
+	ErrSavingNewPost        = errors.New("Could not save new post")
 )
 
 type Post struct {
@@ -27,6 +28,7 @@ type PostPage struct {
 
 type PostStore interface {
 	GetPostWithUser(string) (PostPage, error)
+	NewPost(Post) (Post, error)
 }
 
 type PostService struct {
@@ -44,6 +46,15 @@ func (s *PostService) GetPostWithUser(slug string) (PostPage, error) {
 	if err != nil {
 		log.Fatalf("An error occured fetching the latest post feed: %s", err.Error())
 		return PostPage{}, ErrFetchingPostWithUser
+	}
+	return post, nil
+}
+
+func (s *PostService) NewPost(post Post) (Post, error) {
+	post, err := s.Store.NewPost(post)
+	if err != nil {
+		log.Fatalf("An error occured saving the new post: %s", err.Error())
+		return Post{}, ErrSavingNewPost
 	}
 	return post, nil
 }

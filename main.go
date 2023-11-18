@@ -29,12 +29,26 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	userService := models.NewUserService(db)
 	userProfileHandler := transport.NewUserProfileHandler(userService, feedItemService)
-	r.HandleFunc("/user/{handle}", userProfileHandler.Get)
+	r.HandleFunc("/user/{handle}", userProfileHandler.Get).Methods("GET")
+	r.HandleFunc("/user/{handle}", userProfileHandler.Update).Methods("POST")
+
+	r.PathPrefix("/").HandlerFunc(corsHandler).Methods("OPTIONS")
 
 	postService := models.NewPostService(db)
-	postServiceHandler := transport.NewPostPageHandler(postService)
-	r.HandleFunc("/post/{slug}", postServiceHandler.GetPostPage)
+	postServiceHandler := transport.NewPostHandler(postService)
+	r.HandleFunc("/post/{slug}", postServiceHandler.GetPostPage).Methods("GET")
+	r.HandleFunc("/new-post", postServiceHandler.NewPost).Methods("POST")
 
+	slugsService := models.NewSlugsService(db)
+	slugsHandler := transport.NewSlugsHandler(slugsService)
+	r.HandleFunc("/slugs/{handle}", slugsHandler.Get)
+
+}
+
+func corsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Headers", "*")
+	w.WriteHeader(http.StatusOK)
 }
 
 func main() {

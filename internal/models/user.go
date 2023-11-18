@@ -25,6 +25,7 @@ type UserProfile struct {
 
 type UserStore interface {
 	GetUser(string) (User, error)
+	UpdateUser(string, User) (User, error)
 }
 
 type UserService struct {
@@ -39,6 +40,15 @@ func NewUserService(store UserStore) *UserService {
 
 func (s *UserService) GetUser(handle string) (User, error) {
 	user, err := s.Store.GetUser(handle)
+	if err != nil {
+		log.Fatalf("An error occured fetching the latest post feed: %s", err.Error())
+		return User{}, ErrFetchingUser
+	}
+	return user, nil
+}
+
+func (s *UserService) UpdateUser(handle string, user User) (User, error) {
+	user, err := s.Store.UpdateUser(handle, user)
 	if err != nil {
 		log.Fatalf("An error occured fetching the latest post feed: %s", err.Error())
 		return User{}, ErrFetchingUser

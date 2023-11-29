@@ -3,8 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-
-	"rsbruce/blogsite-api/internal/models"
 )
 
 type UserProfileRow struct {
@@ -21,8 +19,22 @@ type UserRow struct {
 	Created_at      sql.NullString
 }
 
-func userFromRow(row UserRow) models.User {
-	return models.User{
+type User struct {
+	ID              []byte `json:"id"`
+	Handle          string `json:"handle"`
+	Blurb           string `json:"blurb"`
+	Display_name    string `json:"display_name"`
+	Display_picture string `json:"display_picture"`
+	User_role       string `json:"user_role"`
+	Created_at      string `json:"created_at"`
+}
+type UserProfile struct {
+	User        User           `json:"user"`
+	LatestPosts []FeedItemPost `json:"posts"`
+}
+
+func userFromRow(row UserRow) User {
+	return User{
 		ID:              row.ID,
 		Handle:          row.Handle.String,
 		Blurb:           row.Blurb.String,
@@ -33,7 +45,7 @@ func userFromRow(row UserRow) models.User {
 	}
 }
 
-func (db *Database) GetUser(handle string) (models.User, error) {
+func (db *Database) GetUser(handle string) (User, error) {
 
 	row := db.Client.QueryRow("SELECT id, handle, blurb, display_name, display_picture, user_role, created_at FROM user WHERE handle = ?", handle)
 	var user_row UserRow
@@ -47,13 +59,13 @@ func (db *Database) GetUser(handle string) (models.User, error) {
 		&user_row.User_role,
 		&user_row.Created_at,
 	); err != nil {
-		return models.User{}, fmt.Errorf("getUser %v", err)
+		return User{}, fmt.Errorf("getUser %v", err)
 	}
 
 	return userFromRow(user_row), nil
 }
 
-func (db *Database) UpdateUser(handle string, user models.User) (models.User, error) {
+func (db *Database) UpdateUser(handle string, user User) (User, error) {
 
 	user_row := UserRow{
 		Handle:       sql.NullString{String: handle, Valid: true},
@@ -70,10 +82,10 @@ func (db *Database) UpdateUser(handle string, user models.User) (models.User, er
 	)
 
 	if err != nil {
-		return models.User{}, fmt.Errorf("UpdateUser %v", err)
+		return User{}, fmt.Errorf("UpdateUser %v", err)
 	}
 	if err := rows.Close(); err != nil {
-		return models.User{}, fmt.Errorf("failed to close rows: %w", err)
+		return User{}, fmt.Errorf("failed to close rows: %w", err)
 	}
 
 	return userFromRow(user_row), nil

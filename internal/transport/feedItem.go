@@ -5,39 +5,27 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"rsbruce/blogsite-api/internal/models"
 )
 
-type PostFeedItemHandler struct {
-	GetLatestAllAuthors func(w http.ResponseWriter, r *http.Request)
-	GetLatestForAuthor  func(w http.ResponseWriter, r *http.Request)
+func (handler *HttpHandler) GetLatestAllAuthors(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	post_feed, err := handler.DB_conn.GetLatestPostFeed()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	json.NewEncoder(w).Encode(post_feed)
 }
 
-func NewPostFeedItemHandler(service *models.FeedItemService) PostFeedItemHandler {
-	var handler PostFeedItemHandler
+func (handler *HttpHandler) GetLatestForAuthor(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	params := mux.Vars(r)
+	handle := params["handle"]
 
-	handler.GetLatestAllAuthors = func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		post_feed, err := service.Store.GetLatestPostFeed()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		json.NewEncoder(w).Encode(post_feed)
+	author_post_feed, err := handler.DB_conn.GetFeedItemPostsForAuthor(handle)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	handler.GetLatestForAuthor = func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		params := mux.Vars(r)
-		handle := params["handle"]
-
-		author_post_feed, err := service.Store.GetFeedItemPostsForAuthor(handle)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		json.NewEncoder(w).Encode(author_post_feed)
-	}
-
-	return handler
+	json.NewEncoder(w).Encode(author_post_feed)
 }

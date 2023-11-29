@@ -3,8 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-
-	"rsbruce/blogsite-api/internal/models"
 )
 
 type FeedItemRow struct {
@@ -25,12 +23,30 @@ type FeedItemUserRow struct {
 	Handle          sql.NullString
 }
 
-func feedItemsPostsFromRows(rows []FeedItemPostRow) []models.FeedItemPost {
+type FeedItem struct {
+	Post FeedItemPost `json:"post"`
+	User FeedItemUser `json:"user"`
+}
+
+type FeedItemPost struct {
+	Title      string `json:"title"`
+	Subtitle   string `json:"subtitle"`
+	Slug       string `json:"slug"`
+	Created_at string `json:"created_at"`
+}
+
+type FeedItemUser struct {
+	Display_name    string `json:"display_name"`
+	Display_picture string `json:"display_picture"`
+	Handle          string `json:"handle"`
+}
+
+func feedItemsPostsFromRows(rows []FeedItemPostRow) []FeedItemPost {
 	numItems := len(rows)
-	items := make([]models.FeedItemPost, numItems)
+	items := make([]FeedItemPost, numItems)
 
 	for index, row := range rows {
-		items[index] = models.FeedItemPost{
+		items[index] = FeedItemPost{
 			Title:      row.Title.String,
 			Subtitle:   row.Subtitle.String,
 			Slug:       row.Slug.String,
@@ -41,23 +57,23 @@ func feedItemsPostsFromRows(rows []FeedItemPostRow) []models.FeedItemPost {
 	return items
 }
 
-func feedItemsFromRows(rows []FeedItemRow) []models.FeedItem {
+func feedItemsFromRows(rows []FeedItemRow) []FeedItem {
 	numItems := len(rows)
-	items := make([]models.FeedItem, numItems)
+	items := make([]FeedItem, numItems)
 
 	for index, row := range rows {
-		feedItemPost := models.FeedItemPost{
+		feedItemPost := FeedItemPost{
 			Title:      row.Post.Title.String,
 			Subtitle:   row.Post.Subtitle.String,
 			Slug:       row.Post.Slug.String,
 			Created_at: row.Post.Created_at.String,
 		}
-		feedItemUser := models.FeedItemUser{
+		feedItemUser := FeedItemUser{
 			Display_picture: row.User.Display_picture.String,
 			Display_name:    row.User.Display_name.String,
 			Handle:          row.User.Handle.String,
 		}
-		items[index] = models.FeedItem{
+		items[index] = FeedItem{
 			Post: feedItemPost,
 			User: feedItemUser,
 		}
@@ -66,7 +82,7 @@ func feedItemsFromRows(rows []FeedItemRow) []models.FeedItem {
 	return items
 }
 
-func (db *Database) GetLatestPostFeed() ([]models.FeedItem, error) {
+func (db *Database) GetLatestPostFeed() ([]FeedItem, error) {
 	var feedItemRows []FeedItemRow
 
 	rows, err := db.Client.Query(
@@ -100,7 +116,7 @@ func (db *Database) GetLatestPostFeed() ([]models.FeedItem, error) {
 	return feedItemsFromRows(feedItemRows), nil
 }
 
-func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]models.FeedItemPost, error) {
+func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, error) {
 	var feedItemPosts []FeedItemPostRow
 	rows, err := db.Client.Query(
 		`SELECT post.title, post.subtitle, post.slug, post.created_at

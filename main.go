@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"rsbruce/blogsite-api/internal/database"
-	"rsbruce/blogsite-api/internal/models"
 	"rsbruce/blogsite-api/internal/transport"
 
 	"github.com/gorilla/mux"
@@ -18,37 +17,23 @@ import (
 
 func setupRoutes(r *mux.Router, db *database.Database) {
 
-	textContentService := models.NewTextContentService(db)
-	textContentHandler := transport.NewTextContentHandler(textContentService)
-	r.HandleFunc("/text-content/{slug}", textContentHandler.Get)
+	handler := transport.NewHttpHandler(db)
 
-	feedItemService := models.NewFeedItemService(db)
-	feedItemHandler := transport.NewPostFeedItemHandler(feedItemService)
-	r.HandleFunc("/latest-posts/{handle}", feedItemHandler.GetLatestForAuthor)
-	r.HandleFunc("/latest-posts", feedItemHandler.GetLatestAllAuthors)
+	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
 
-	userService := models.NewUserService(db)
-	userProfileHandler := transport.NewUserProfileHandler(userService, feedItemService)
-	r.HandleFunc("/user/{handle}", userProfileHandler.Get).Methods("GET")
-	r.HandleFunc("/user/{handle}", userProfileHandler.Update).Methods("POST")
+	r.HandleFunc("/text-content/{slug}", handler.GetTextContent)
 
-	r.PathPrefix("/").HandlerFunc(corsHandler).Methods("OPTIONS")
+	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor)
+	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors)
 
-	postService := models.NewPostService(db)
-	postServiceHandler := transport.NewPostHandler(postService)
-	r.HandleFunc("/post/{slug}", postServiceHandler.GetPostPage).Methods("GET")
-	r.HandleFunc("/new-post", postServiceHandler.NewPost).Methods("POST")
+	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
+	r.HandleFunc("/user/{handle}", handler.UpdateUserProfile).Methods("PUT")
 
-	slugsService := models.NewSlugsService(db)
-	slugsHandler := transport.NewSlugsHandler(slugsService)
-	r.HandleFunc("/slugs/{handle}", slugsHandler.Get)
+	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
+	r.HandleFunc("/new-post", handler.NewPost).Methods("POST")
 
-}
+	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser)
 
-func corsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
-	w.Header().Add("Access-Control-Allow-Headers", "*")
-	w.WriteHeader(http.StatusOK)
 }
 
 func main() {

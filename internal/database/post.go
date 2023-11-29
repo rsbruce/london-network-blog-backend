@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"rsbruce/blogsite-api/internal/models"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -20,8 +19,24 @@ type PostRow struct {
 	Created_at sql.NullString
 }
 
-func postFromRow(row PostRow) models.Post {
-	return models.Post{
+type Post struct {
+	ID         []byte `json:"id"`
+	Author_id  []byte `json:"author_id"`
+	Slug       string `json:"slug"`
+	Title      string `json:"title"`
+	Subtitle   string `json:"subtitle"`
+	Content    string `json:"content"`
+	Main_image string `json:"main_image"`
+	Created_at string `json:"created_at"`
+}
+
+type PostPage struct {
+	Post Post `json:"post"`
+	User User `json:"user"`
+}
+
+func postFromRow(row PostRow) Post {
+	return Post{
 		ID:         row.ID,
 		Author_id:  row.Author_id,
 		Slug:       row.Slug.String,
@@ -33,15 +48,15 @@ func postFromRow(row PostRow) models.Post {
 	}
 }
 
-func partialUserFromRow(row UserRow) models.User {
-	return models.User{
+func partialUserFromRow(row UserRow) User {
+	return User{
 		Handle:          row.Handle.String,
 		Display_name:    row.Display_name.String,
 		Display_picture: row.Display_picture.String,
 	}
 }
 
-func (db *Database) NewPost(post models.Post) (models.Post, error) {
+func (db *Database) NewPost(post Post) (Post, error) {
 	post.ID = uuid.NewV4().Bytes()
 	postRow := PostRow{
 		ID:         post.ID,
@@ -61,26 +76,26 @@ func (db *Database) NewPost(post models.Post) (models.Post, error) {
 		postRow,
 	)
 	if err != nil {
-		return models.Post{}, fmt.Errorf("failed to insert post: %w", err)
+		return Post{}, fmt.Errorf("failed to insert post: %w", err)
 	}
 	if err = rows.Close(); err != nil {
-		return models.Post{}, fmt.Errorf("failed to close rows: %w", err)
+		return Post{}, fmt.Errorf("failed to close rows: %w", err)
 	}
 
 	return post, nil
 }
 
-func postPageFromRow(post_row PostRow, user_row UserRow) models.PostPage {
+func postPageFromRow(post_row PostRow, user_row UserRow) PostPage {
 	post := postFromRow(post_row)
 	user := userFromRow(user_row)
 
-	return models.PostPage{
+	return PostPage{
 		Post: post,
 		User: user,
 	}
 }
 
-func (db *Database) GetPostWithUser(slug string) (models.PostPage, error) {
+func (db *Database) GetPostWithUser(slug string) (PostPage, error) {
 	row := db.Client.QueryRow(
 		`SELECT post.id, post.author_id, post.title, post.subtitle, post.content, post.slug, post.main_image, post.created_at, user.display_name, user.display_picture, user.handle 
         FROM post 
@@ -102,7 +117,7 @@ func (db *Database) GetPostWithUser(slug string) (models.PostPage, error) {
 		&user_row.Display_picture,
 		&user_row.Handle,
 	); err != nil {
-		return models.PostPage{}, fmt.Errorf("getPost %v", err)
+		return PostPage{}, fmt.Errorf("getPost %v", err)
 	}
 
 	return postPageFromRow(post_row, user_row), nil

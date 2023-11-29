@@ -5,37 +5,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"rsbruce/blogsite-api/internal/models"
+	"rsbruce/blogsite-api/internal/database"
 
 	"github.com/gorilla/mux"
 )
 
-type UserProfileHandler struct {
-	Get             func(w http.ResponseWriter, r *http.Request)
-	Update          func(w http.ResponseWriter, r *http.Request)
-	userService     *models.UserService
-	feedItemService *models.FeedItemService
-}
-type ResponseMessage struct {
-	Message string
-}
-
-func (handler *UserProfileHandler) getUserProfile(w http.ResponseWriter, r *http.Request) {
+func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	params := mux.Vars(r)
 	handle := params["handle"]
 
-	author, err := handler.userService.Store.GetUser(handle)
+	author, err := handler.DB_conn.GetUser(handle)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	feed_item_posts, err := handler.feedItemService.GetFeedItemPostsForAuthor(handle)
+	feed_item_posts, err := handler.DB_conn.GetFeedItemPostsForAuthor(handle)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	user_profile := models.UserProfile{
+	user_profile := database.UserProfile{
 		User:        author,
 		LatestPosts: feed_item_posts,
 	}
@@ -43,7 +33,7 @@ func (handler *UserProfileHandler) getUserProfile(w http.ResponseWriter, r *http
 	json.NewEncoder(w).Encode(user_profile)
 }
 
-func (handler *UserProfileHandler) updateUserProfile(w http.ResponseWriter, r *http.Request) {
+func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Println("Endpoint hit")
@@ -52,7 +42,7 @@ func (handler *UserProfileHandler) updateUserProfile(w http.ResponseWriter, r *h
 
 	decoder := json.NewDecoder(r.Body)
 
-	var user_changes models.User
+	var user_changes database.User
 	err := decoder.Decode(&user_changes)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -60,7 +50,7 @@ func (handler *UserProfileHandler) updateUserProfile(w http.ResponseWriter, r *h
 		log.Fatal(err)
 	}
 
-	user, err := handler.userService.UpdateUser(handle, user_changes)
+	user, err := handler.DB_conn.UpdateUser(handle, user_changes)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -69,13 +59,4 @@ func (handler *UserProfileHandler) updateUserProfile(w http.ResponseWriter, r *h
 	}
 
 	json.NewEncoder(w).Encode(user)
-}
-
-func NewUserProfileHandler(userService *models.UserService, feedItemService *models.FeedItemService) UserProfileHandler {
-	var handler UserProfileHandler
-	handler.userService = userService
-	handler.feedItemService = feedItemService
-	handler.Get = handler.getUserProfile
-	handler.Update = handler.updateUserProfile
-	return handler
 }

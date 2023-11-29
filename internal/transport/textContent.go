@@ -5,27 +5,17 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"rsbruce/blogsite-api/internal/models"
 )
 
-type TextContentHandler struct {
-	Get func(w http.ResponseWriter, r *http.Request)
-}
+func (handler *HttpHandler) GetTextContent(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	params := mux.Vars(r)
+	slug := params["slug"]
 
-func NewTextContentHandler(service *models.TextContentService) TextContentHandler {
-	var handler TextContentHandler
-	handler.Get = func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		params := mux.Vars(r)
-		slug := params["slug"]
-
-		textContent, err := service.Store.GetTextContent(slug)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		json.NewEncoder(w).Encode(textContent)
+	textContent, err := handler.DB_conn.GetTextContent(slug)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	return handler
+	json.NewEncoder(w).Encode(textContent)
 }

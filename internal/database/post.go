@@ -56,6 +56,38 @@ func partialUserFromRow(row UserRow) User {
 		Display_picture: row.Display_picture.String,
 	}
 }
+func (db *Database) UpdatePost(post Post) (Post, error) {
+	postRow := PostRow{
+		ID:         sql.NullInt64{Int64: post.ID, Valid: post.ID != 0},
+		Slug:       sql.NullString{String: post.Slug, Valid: post.Slug != ""},
+		Title:      sql.NullString{String: post.Title, Valid: post.Title != ""},
+		Subtitle:   sql.NullString{String: post.Subtitle, Valid: post.Subtitle != ""},
+		Content:    sql.NullString{String: post.Content, Valid: post.Content != ""},
+		Main_image: sql.NullString{String: post.Main_image, Valid: post.Main_image != ""},
+		Updated_at: sql.NullString{String: time.Now().Format(time.DateTime), Valid: true},
+	}
+
+	rows, err := db.Client.NamedQuery(
+		`UPDATE post SET
+		slug = :slug,
+		title = :title,
+		subtitle = :subtitle,
+		content = :content,
+		main_image = :main_image,
+		updated_at = :updated_at
+		WHERE id = :id`,
+		postRow,
+	)
+
+	if err != nil {
+		return Post{}, err
+	}
+	if err := rows.Close(); err != nil {
+		return Post{}, err
+	}
+
+	return postFromRow(postRow), nil
+}
 
 func (db *Database) NewPost(post Post) (Post, error) {
 	postRow := PostRow{

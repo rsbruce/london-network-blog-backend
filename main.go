@@ -30,6 +30,7 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	r.HandleFunc("/user/{handle}", handler.UpdateUserProfile).Methods("PUT")
 
 	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
+	r.HandleFunc("/post/{id}", handler.UpdatePost).Methods("PUT")
 	r.HandleFunc("/new-post", handler.NewPost).Methods("POST")
 
 	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")

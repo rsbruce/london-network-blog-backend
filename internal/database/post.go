@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 )
 
@@ -119,7 +118,7 @@ func (db *Database) GetPostWithUser(slug string) (PostPage, error) {
 		&user_row.Display_picture,
 		&user_row.Handle,
 	); err != nil {
-		return PostPage{}, fmt.Errorf("getPost %v", err)
+		return PostPage{}, err
 	}
 
 	return postPageFromRow(post_row, user_row), nil

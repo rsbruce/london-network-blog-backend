@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 type SlugRow struct {
@@ -35,7 +34,7 @@ func (db *Database) GetSlugsForUser(handle string) (Slugs, error) {
 	var slug_rows []SlugRow
 
 	if err != nil {
-		return Slugs{}, fmt.Errorf("GetSlugsForUser %v", err)
+		return Slugs{}, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -44,7 +43,7 @@ func (db *Database) GetSlugsForUser(handle string) (Slugs, error) {
 		if err := rows.Scan(
 			&slug_row.Slug,
 		); err != nil {
-			return Slugs{}, fmt.Errorf("getPost %v", err)
+			return Slugs{}, err
 		}
 		slug_rows = append(slug_rows, slug_row)
 	}

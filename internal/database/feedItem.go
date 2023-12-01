@@ -92,7 +92,7 @@ func (db *Database) GetLatestPostFeed() ([]FeedItem, error) {
                 ORDER BY created_at DESC
                 LIMIT 5;`)
 	if err != nil {
-		return nil, fmt.Errorf("latestPosts: %v", err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -110,7 +110,7 @@ func (db *Database) GetLatestPostFeed() ([]FeedItem, error) {
 		feedItemRows = append(feedItemRows, feedItemRow)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("latestPosts %v", err)
+		return nil, err
 	}
 
 	return feedItemsFromRows(feedItemRows), nil
@@ -126,7 +126,7 @@ func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, er
         WHERE user.handle = ?
 		ORDER BY created_at DESC`, handle)
 	if err != nil {
-		return nil, fmt.Errorf("postItemsByUserHandle %v", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -134,7 +134,7 @@ func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, er
 		feedItemPost := FeedItemPostRow{}
 		err = rows.Scan(&feedItemPost.Title, &feedItemPost.Subtitle, &feedItemPost.Slug, &feedItemPost.Created_at)
 		if err != nil {
-			return nil, fmt.Errorf("postItemsByUserHandle %v", err)
+			return nil, err
 		}
 		feedItemPosts = append(feedItemPosts, feedItemPost)
 	}

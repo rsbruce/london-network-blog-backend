@@ -21,10 +21,10 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
 
-	r.HandleFunc("/text-content/{slug}", handler.GetTextContent)
+	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
 
-	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor)
-	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors)
+	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
+	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
 
 	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
 	r.HandleFunc("/user/{handle}", handler.UpdateUserProfile).Methods("PUT")
@@ -32,7 +32,7 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
 	r.HandleFunc("/new-post", handler.NewPost).Methods("POST")
 
-	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser)
+	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
 
 }
 

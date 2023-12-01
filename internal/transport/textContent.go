@@ -14,8 +14,10 @@ func (handler *HttpHandler) GetTextContent(w http.ResponseWriter, r *http.Reques
 
 	textContent, err := handler.DB_conn.GetTextContent(slug)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "No Text Content found with slug: " + slug})
+		return
 	}
-
 	json.NewEncoder(w).Encode(textContent)
 }

@@ -17,12 +17,18 @@ func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Reques
 
 	author, err := handler.DB_conn.GetUser(handle)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: fmt.Sprintf("Could not get user with handle: %s", handle)})
+		return
 	}
 
 	feed_item_posts, err := handler.DB_conn.GetFeedItemPostsForAuthor(handle)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: fmt.Sprintf("Failed to retrieve post items for author with handle: %s.", handle)})
+		return
 	}
 
 	user_profile := database.UserProfile{
@@ -45,17 +51,19 @@ func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Req
 	var user_changes database.User
 	err := decoder.Decode(&user_changes)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "500 - parse error"})
-		log.Fatal(err)
+		log.Print(err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Invalid JSON payload for this route."})
+		return
 	}
 
 	user, err := handler.DB_conn.UpdateUser(handle, user_changes)
 
 	if err != nil {
+		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "500 - db error"})
-		log.Fatal(err)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Could not update user."})
+		return
 	}
 
 	json.NewEncoder(w).Encode(user)

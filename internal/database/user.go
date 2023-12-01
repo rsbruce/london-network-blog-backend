@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 type UserProfileRow struct {
@@ -59,7 +58,7 @@ func (db *Database) GetUser(handle string) (User, error) {
 		&user_row.User_role,
 		&user_row.Created_at,
 	); err != nil {
-		return User{}, fmt.Errorf("getUser %v", err)
+		return User{}, err
 	}
 
 	return userFromRow(user_row), nil
@@ -82,10 +81,10 @@ func (db *Database) UpdateUser(handle string, user User) (User, error) {
 	)
 
 	if err != nil {
-		return User{}, fmt.Errorf("UpdateUser %v", err)
+		return User{}, err
 	}
 	if err := rows.Close(); err != nil {
-		return User{}, fmt.Errorf("failed to close rows: %w", err)
+		return User{}, err
 	}
 
 	return userFromRow(user_row), nil

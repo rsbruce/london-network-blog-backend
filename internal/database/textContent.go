@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 type TextContentRow struct {
@@ -24,7 +23,7 @@ func (db *Database) GetTextContent(slug string) (TextContent, error) {
 	row := db.Client.QueryRow("SELECT content FROM text_content WHERE slug = ?", slug)
 	var textContentRow TextContentRow
 	if err := row.Scan(&textContentRow.Content); err != nil {
-		return TextContent{}, fmt.Errorf("getTextContent %v", err)
+		return TextContent{}, err
 	}
 
 	return textContentFromRow(textContentRow), nil

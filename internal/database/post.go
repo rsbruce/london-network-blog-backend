@@ -4,13 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 type PostRow struct {
-	ID         []byte
-	Author_id  []byte
+	ID         sql.NullInt64
+	Author_id  sql.NullInt64
 	Slug       sql.NullString
 	Title      sql.NullString
 	Subtitle   sql.NullString
@@ -20,8 +18,8 @@ type PostRow struct {
 }
 
 type Post struct {
-	ID         []byte `json:"id"`
-	Author_id  []byte `json:"author_id"`
+	ID         int64  `json:"id"`
+	Author_id  int64  `json:"author_id"`
 	Slug       string `json:"slug"`
 	Title      string `json:"title"`
 	Subtitle   string `json:"subtitle"`
@@ -37,8 +35,8 @@ type PostPage struct {
 
 func postFromRow(row PostRow) Post {
 	return Post{
-		ID:         row.ID,
-		Author_id:  row.Author_id,
+		ID:         row.ID.Int64,
+		Author_id:  row.Author_id.Int64,
 		Slug:       row.Slug.String,
 		Title:      row.Title.String,
 		Subtitle:   row.Subtitle.String,
@@ -57,32 +55,32 @@ func partialUserFromRow(row UserRow) User {
 }
 
 func (db *Database) NewPost(post Post) (Post, error) {
-	post.ID = uuid.NewV4().Bytes()
 	postRow := PostRow{
-		ID:         post.ID,
-		Author_id:  post.Author_id,
+		Author_id:  sql.NullInt64{Int64: post.Author_id, Valid: true},
 		Slug:       sql.NullString{String: post.Slug, Valid: true},
 		Title:      sql.NullString{String: post.Title, Valid: true},
 		Subtitle:   sql.NullString{String: post.Subtitle, Valid: true},
 		Content:    sql.NullString{String: post.Content, Valid: true},
 		Main_image: sql.NullString{String: post.Main_image, Valid: true},
-		Created_at: sql.NullString{String: time.Now().Format(time.DateOnly), Valid: true},
+		Created_at: sql.NullString{String: time.Now().Format(time.DateTime), Valid: true},
 	}
 
-	rows, err := db.Client.NamedQuery(
-		`INSERT INTO post 
-		(id, author_id, slug, title, subtitle, content, main_image, created_at) VALUES
-		(:id, :author_id, :slug, :title, :subtitle, :content, :main_image, :created_at) `,
-		postRow,
-	)
+	res, err := db.Client.Exec(`INSERT INTO post 
+	(author_id, slug, title, subtitle, content, main_image, created_at) 
+	VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		postRow.Author_id, postRow.Slug, postRow.Title, postRow.Subtitle, postRow.Content, postRow.Main_image, postRow.Created_at)
 	if err != nil {
-		return Post{}, fmt.Errorf("failed to insert post: %w", err)
-	}
-	if err = rows.Close(); err != nil {
-		return Post{}, fmt.Errorf("failed to close rows: %w", err)
+		return Post{}, err
 	}
 
-	return post, nil
+	id, err := res.LastInsertId()
+	if err != nil {
+		return Post{}, err
+	}
+
+	postRow.ID = sql.NullInt64{Int64: id, Valid: true}
+
+	return postFromRow(postRow), nil
 }
 
 func postPageFromRow(post_row PostRow, user_row UserRow) PostPage {

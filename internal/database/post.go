@@ -15,6 +15,8 @@ type PostRow struct {
 	Content    sql.NullString
 	Main_image sql.NullString
 	Created_at sql.NullString
+	Updated_at sql.NullString
+	Deleted_at sql.NullString
 }
 
 type Post struct {
@@ -26,6 +28,8 @@ type Post struct {
 	Content    string `json:"content"`
 	Main_image string `json:"main_image"`
 	Created_at string `json:"created_at"`
+	Updated_at string `json:"updated_at"`
+	Deleted_at string `json:"deleted_at"`
 }
 
 type PostPage struct {

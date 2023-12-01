@@ -10,7 +10,7 @@ type UserProfileRow struct {
 	LatestPosts []FeedItemPostRow
 }
 type UserRow struct {
-	ID              []byte
+	ID              sql.NullInt64
 	Handle          sql.NullString
 	Blurb           sql.NullString
 	Display_name    sql.NullString
@@ -20,7 +20,7 @@ type UserRow struct {
 }
 
 type User struct {
-	ID              []byte `json:"id"`
+	ID              int64  `json:"id"`
 	Handle          string `json:"handle"`
 	Blurb           string `json:"blurb"`
 	Display_name    string `json:"display_name"`
@@ -35,7 +35,7 @@ type UserProfile struct {
 
 func userFromRow(row UserRow) User {
 	return User{
-		ID:              row.ID,
+		ID:              row.ID.Int64,
 		Handle:          row.Handle.String,
 		Blurb:           row.Blurb.String,
 		Display_name:    row.Display_name.String,

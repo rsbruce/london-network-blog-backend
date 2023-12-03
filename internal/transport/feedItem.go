@@ -26,7 +26,7 @@ func (handler *HttpHandler) GetLatestForAuthor(w http.ResponseWriter, r *http.Re
 	params := mux.Vars(r)
 	handle := params["handle"]
 
-	author_post_feed, err := handler.DB_conn.GetFeedItemPostsForAuthor(handle)
+	author_post_feed, err := handler.DB_conn.GetActiveFeedItemPostsForAuthor(handle)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusNotFound)

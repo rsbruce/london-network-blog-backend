@@ -23,7 +23,7 @@ func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	feed_item_posts, err := handler.DB_conn.GetFeedItemPostsForAuthor(handle)
+	feed_item_posts, err := handler.DB_conn.GetAllFeedItemPostsForAuthor(handle)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusNotFound)

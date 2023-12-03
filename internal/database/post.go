@@ -90,10 +90,18 @@ func (db *Database) UpdatePost(post Post) (Post, error) {
 }
 
 func (db *Database) ArchivePost(id int) error {
-	_, err := db.Client.Exec(`INSERT INTO post
+	_, err := db.Client.Exec(`UPDATE post
 		SET deleted_at = ?
 		WHERE id = ?`,
 		time.Now().Format(time.DateTime), id)
+
+	return err
+}
+
+func (db *Database) RestorePost(id int) error {
+	_, err := db.Client.Exec(`UPDATE post
+		SET deleted_at = NULL
+		WHERE id = ?`, id)
 
 	return err
 }

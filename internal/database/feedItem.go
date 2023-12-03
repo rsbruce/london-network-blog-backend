@@ -11,10 +11,12 @@ type FeedItemRow struct {
 }
 
 type FeedItemPostRow struct {
+	ID         sql.NullInt64
 	Title      sql.NullString
 	Subtitle   sql.NullString
 	Slug       sql.NullString
 	Created_at sql.NullString
+	Deleted_at sql.NullString
 }
 
 type FeedItemUserRow struct {
@@ -29,10 +31,12 @@ type FeedItem struct {
 }
 
 type FeedItemPost struct {
+	ID         int64  `json:"id"`
 	Title      string `json:"title"`
 	Subtitle   string `json:"subtitle"`
 	Slug       string `json:"slug"`
 	Created_at string `json:"created_at"`
+	Deleted_at string `json:"deleted_at"`
 }
 
 type FeedItemUser struct {
@@ -47,10 +51,12 @@ func feedItemsPostsFromRows(rows []FeedItemPostRow) []FeedItemPost {
 
 	for index, row := range rows {
 		items[index] = FeedItemPost{
+			ID:         row.ID.Int64,
 			Title:      row.Title.String,
 			Subtitle:   row.Subtitle.String,
 			Slug:       row.Slug.String,
 			Created_at: row.Created_at.String,
+			Deleted_at: row.Deleted_at.String,
 		}
 	}
 
@@ -63,10 +69,12 @@ func feedItemsFromRows(rows []FeedItemRow) []FeedItem {
 
 	for index, row := range rows {
 		feedItemPost := FeedItemPost{
+			ID:         row.Post.ID.Int64,
 			Title:      row.Post.Title.String,
 			Subtitle:   row.Post.Subtitle.String,
 			Slug:       row.Post.Slug.String,
 			Created_at: row.Post.Created_at.String,
+			Deleted_at: row.Post.Deleted_at.String,
 		}
 		feedItemUser := FeedItemUser{
 			Display_picture: row.User.Display_picture.String,
@@ -116,10 +124,36 @@ func (db *Database) GetLatestPostFeed() ([]FeedItem, error) {
 	return feedItemsFromRows(feedItemRows), nil
 }
 
-func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, error) {
+func (db *Database) GetActiveFeedItemPostsForAuthor(handle string) ([]FeedItemPost, error) {
 	var feedItemPosts []FeedItemPostRow
 	rows, err := db.Client.Query(
-		`SELECT post.title, post.subtitle, post.slug, post.created_at
+		`SELECT post.id, post.title, post.subtitle, post.slug, post.created_at
+        FROM post
+        INNER JOIN user
+        ON post.author_id = user.id
+        WHERE user.handle = ? AND deleted_at IS NULL
+		ORDER BY created_at DESC`, handle)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		feedItemPost := FeedItemPostRow{}
+		err = rows.Scan(&feedItemPost.ID, &feedItemPost.Title, &feedItemPost.Subtitle, &feedItemPost.Slug, &feedItemPost.Created_at)
+		if err != nil {
+			return nil, err
+		}
+		feedItemPosts = append(feedItemPosts, feedItemPost)
+	}
+
+	return feedItemsPostsFromRows(feedItemPosts), nil
+}
+
+func (db *Database) GetAllFeedItemPostsForAuthor(handle string) ([]FeedItemPost, error) {
+	var feedItemPosts []FeedItemPostRow
+	rows, err := db.Client.Query(
+		`SELECT post.id, post.title, post.subtitle, post.slug, post.created_at, post.deleted_at
         FROM post
         INNER JOIN user
         ON post.author_id = user.id
@@ -132,7 +166,7 @@ func (db *Database) GetFeedItemPostsForAuthor(handle string) ([]FeedItemPost, er
 
 	for rows.Next() {
 		feedItemPost := FeedItemPostRow{}
-		err = rows.Scan(&feedItemPost.Title, &feedItemPost.Subtitle, &feedItemPost.Slug, &feedItemPost.Created_at)
+		err = rows.Scan(&feedItemPost.ID, &feedItemPost.Title, &feedItemPost.Subtitle, &feedItemPost.Slug, &feedItemPost.Created_at, &feedItemPost.Deleted_at)
 		if err != nil {
 			return nil, err
 		}

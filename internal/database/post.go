@@ -89,6 +89,21 @@ func (db *Database) UpdatePost(post Post) (Post, error) {
 	return postFromRow(postRow), nil
 }
 
+func (db *Database) ArchivePost(id int) error {
+	_, err := db.Client.Exec(`INSERT INTO post
+		SET deleted_at = ?
+		WHERE id = ?`,
+		time.Now().Format(time.DateTime), id)
+
+	return err
+}
+
+func (db *Database) DeletePost(id int) error {
+	_, err := db.Client.Exec(`DELETE FROM post WHERE id = ?`, id)
+
+	return err
+}
+
 func (db *Database) NewPost(post Post) (Post, error) {
 	postRow := PostRow{
 		Author_id:  sql.NullInt64{Int64: post.Author_id, Valid: true},

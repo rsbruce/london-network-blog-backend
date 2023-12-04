@@ -2,6 +2,8 @@ package database
 
 import (
 	"database/sql"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserProfileRow struct {
@@ -16,6 +18,16 @@ type UserRow struct {
 	Display_picture sql.NullString
 	User_role       sql.NullString
 	Created_at      sql.NullString
+}
+
+type UserAuth struct {
+	ID       int64  `json:"id"`
+	Password string `json:"password"`
+}
+
+type UserAuthRow struct {
+	ID       sql.NullInt64
+	Password sql.NullString
 }
 
 type User struct {
@@ -88,4 +100,44 @@ func (db *Database) UpdateUser(handle string, user User) (User, error) {
 	}
 
 	return userFromRow(user_row), nil
+}
+
+func (db *Database) UpdatePassword(userAuth UserAuth) error {
+
+	password := []byte(userAuth.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, password)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Client.Exec(`UPDATE user SET password = ? WHERE id = ?`, hashedPassword, userAuth.ID)
+
+	return err
+}
+
+func (db *Database) CheckPassword(userAuth UserAuth) error {
+
+	password := []byte(userAuth.Password)
+
+	var storedHash []byte
+	row := db.Client.QueryRow(`SELECT password FROM user WHERE id = ?`, userAuth.ID)
+	err := row.Scan(&storedHash)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword(storedHash, password)
+
+	return err
+}
+
+func (db *Database) UpdateDisplayPicture(id int64, imagePath string) error {
+	_, err := db.Client.Exec(`UPDATE user SET display_picture = ? WHERE id = ?`, "http://localhost:8080/"+imagePath, id)
+
+	return err
 }

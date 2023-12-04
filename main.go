@@ -15,9 +15,21 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
+func cors(fs http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Access-Control-Allow-Headers", "*")
+		w.Header().Add("Access-Control-Allow-Methods", "*")
+		fs.ServeHTTP(w, r)
+	}
+}
+
 func setupRoutes(r *mux.Router, db *database.Database) {
 
 	handler := transport.NewHttpHandler(db)
+
+	fs := http.FileServer(http.Dir("./static"))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
 	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
 
@@ -28,6 +40,9 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
 	r.HandleFunc("/user/{handle}", handler.UpdateUserProfile).Methods("PUT")
+	r.HandleFunc("/new-password", handler.UpdatePassword).Methods("PUT")
+	r.HandleFunc("/auth", handler.CheckPassword).Methods("POST")
+	r.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
 
 	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
 	r.HandleFunc("/post/{id}", handler.UpdatePost).Methods("PUT")

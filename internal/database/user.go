@@ -22,11 +22,13 @@ type UserRow struct {
 
 type UserAuth struct {
 	ID       int64  `json:"id"`
+	Handle   string `json:"handle"`
 	Password string `json:"password"`
 }
 
 type UserAuthRow struct {
 	ID       sql.NullInt64
+	Handle   sql.NullString
 	Password sql.NullString
 }
 
@@ -120,20 +122,21 @@ func (db *Database) UpdatePassword(userAuth UserAuth) error {
 	return err
 }
 
-func (db *Database) CheckPassword(userAuth UserAuth) error {
+func (db *Database) CheckPassword(userAuth UserAuth) (int64, error) {
 
 	password := []byte(userAuth.Password)
 
 	var storedHash []byte
-	row := db.Client.QueryRow(`SELECT password FROM user WHERE id = ?`, userAuth.ID)
-	err := row.Scan(&storedHash)
+	var id int64
+	row := db.Client.QueryRow(`SELECT password, id FROM user WHERE handle = ?`, userAuth.Handle)
+	err := row.Scan(&storedHash, &id)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	err = bcrypt.CompareHashAndPassword(storedHash, password)
 
-	return err
+	return id, err
 }
 
 func (db *Database) UpdateDisplayPicture(id int64, imagePath string) error {

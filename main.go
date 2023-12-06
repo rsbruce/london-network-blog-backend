@@ -7,6 +7,7 @@ import (
 
 	"net/http"
 
+	"rsbruce/blogsite-api/internal/auth"
 	"rsbruce/blogsite-api/internal/database"
 	"rsbruce/blogsite-api/internal/transport"
 
@@ -27,6 +28,9 @@ func cors(fs http.Handler) http.HandlerFunc {
 func setupRoutes(r *mux.Router, db *database.Database) {
 
 	handler := transport.NewHttpHandler(db)
+	authHandler := auth.NewAuthHandler(db)
+	userAuth := authHandler.CanAccessUser
+	postAuth := authHandler.CanAccessPost
 
 	fs := http.FileServer(http.Dir("./static"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
@@ -34,24 +38,24 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
 
 	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
-
 	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
 	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
-
 	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
-	r.HandleFunc("/user/{handle}", handler.UpdateUserProfile).Methods("PUT")
-	r.HandleFunc("/new-password", handler.UpdatePassword).Methods("PUT")
-	r.HandleFunc("/auth", handler.CheckPassword).Methods("POST")
-	r.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
-
+	r.HandleFunc("/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/checkAuth/{id}", authHandler.CheckAuth)
 	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
-	r.HandleFunc("/post/{id}", handler.UpdatePost).Methods("PUT")
-	r.HandleFunc("/post/archive/{id}", handler.ArchivePost).Methods("PUT")
-	r.HandleFunc("/post/restore/{id}", handler.RestorePost).Methods("PUT")
-	r.HandleFunc("/post/{id}", handler.DeletePost).Methods("DELETE")
-	r.HandleFunc("/new-post", handler.NewPost).Methods("POST")
-
 	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
+
+	// AUTH ROUTES
+	r.HandleFunc("/user/{handle}", userAuth(handler.UpdateUserProfile)).Methods("PUT")
+	r.HandleFunc("/new-password", userAuth(handler.UpdatePassword)).Methods("PUT")
+	r.HandleFunc("/profile-picture/{id}", userAuth(handler.UploadProfilePicture)).Methods("POST")
+
+	r.HandleFunc("/new-post", postAuth(handler.NewPost)).Methods("POST")
+	r.HandleFunc("/post/{id}", postAuth(handler.UpdatePost)).Methods("PUT")
+	r.HandleFunc("/post/{id}", postAuth(handler.DeletePost)).Methods("DELETE")
+	r.HandleFunc("/post/archive/{id}", postAuth(handler.ArchivePost)).Methods("PUT")
+	r.HandleFunc("/post/restore/{id}", postAuth(handler.RestorePost)).Methods("PUT")
 
 }
 

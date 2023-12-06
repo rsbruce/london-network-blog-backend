@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/sessions"
 	"io"
 	"log"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/gorilla/mux"
 )
+
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 
 func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
@@ -94,34 +97,6 @@ func (handler *HttpHandler) UpdatePassword(w http.ResponseWriter, r *http.Reques
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ResponseMessage{Message: "Could not update password."})
-		return
-	}
-
-	json.NewEncoder(w).Encode(ResponseMessage{Message: "Success"})
-
-}
-
-func (handler *HttpHandler) CheckPassword(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
-
-	decoder := json.NewDecoder(r.Body)
-
-	var user_auth database.UserAuth
-	err := decoder.Decode(&user_auth)
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "Invalid JSON payload for this route."})
-		return
-	}
-
-	err = handler.DB_conn.CheckPassword(user_auth)
-
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "Could not authenticate"})
 		return
 	}
 

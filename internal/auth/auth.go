@@ -22,6 +22,16 @@ type AuthHandler struct {
 
 type ResponseMessage transport.ResponseMessage
 
+type AuthResponse struct {
+	Status string `json:"status"`
+	Auth   string `json:"auth"`
+	UserId int64  `json:"userId"`
+}
+type AuthCheck struct {
+	Message string `json:"message"`
+	Handle  string `json:"handle"`
+}
+
 func NewAuthHandler(db *database.Database) *AuthHandler {
 	return &AuthHandler{
 		store:   sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY"))),
@@ -98,7 +108,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(transport.ResponseMessage{Message: "Invalid JSON payload for this route."})
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Invalid JSON payload for this route."})
 		return
 	}
 
@@ -107,7 +117,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(transport.ResponseMessage{Message: "Could not authenticate"})
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Could not authenticate"})
 		return
 	}
 
@@ -123,23 +133,54 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	err = session.Save(r, w)
 
-	json.NewEncoder(w).Encode(transport.ResponseMessage{Message: "Success"})
+	json.NewEncoder(w).Encode(AuthResponse{
+		Status: "Success",
+		Auth:   w.Header().Get("Set-Cookie"),
+		UserId: id,
+	})
 }
 
 func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
 	params := mux.Vars(r)
-	requestId, _ := strconv.Atoi(params["id"])
+	requestId, err := strconv.Atoi(params["id"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
+		return
+	}
 
 	session, err := ah.store.Get(r, "ks_session")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
 		return
 	}
-	id := session.Values["id"].(int64)
-	authenticated := session.Values["authenticated"].(bool)
+	id, ok := session.Values["id"].(int64)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
+		return
+	}
+
+	authenticated, ok := session.Values["authenticated"].(bool)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
+		return
+	}
+
+	handle, err := ah.DB_conn.UserHandleFromId(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
+		return
+	}
 
 	if id == int64(requestId) && authenticated {
-		json.NewEncoder(w).Encode(transport.ResponseMessage{Message: "Success"})
+		json.NewEncoder(w).Encode(AuthCheck{Message: "Success", Handle: handle})
 	} else {
 		http.Error(w, "Invalid credentials", http.StatusBadRequest)
 	}

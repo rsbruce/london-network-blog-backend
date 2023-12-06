@@ -139,6 +139,17 @@ func (db *Database) CheckPassword(userAuth UserAuth) (int64, error) {
 	return id, err
 }
 
+func (db *Database) UserHandleFromId(id int64) (string, error) {
+	var handle string
+	row := db.Client.QueryRow(`SELECT handle FROM user WHERE id = ?`, id)
+	err := row.Scan(&handle)
+	if err != nil {
+		return "", err
+	}
+
+	return handle, nil
+}
+
 func (db *Database) UpdateDisplayPicture(id int64, imagePath string) error {
 	_, err := db.Client.Exec(`UPDATE user SET display_picture = ? WHERE id = ?`, "http://localhost:8080/"+imagePath, id)
 

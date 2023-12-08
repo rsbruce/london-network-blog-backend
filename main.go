@@ -49,7 +49,7 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	// AUTH ROUTES
 	r.HandleFunc("/user/{handle}", userAuth(handler.UpdateUserProfile)).Methods("PUT")
 	r.HandleFunc("/new-password", userAuth(handler.UpdatePassword)).Methods("PUT")
-	r.HandleFunc("/profile-picture/{id}", userAuth(handler.UploadProfilePicture)).Methods("POST")
+	r.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
 
 	r.HandleFunc("/new-post", postAuth(handler.NewPost)).Methods("POST")
 	r.HandleFunc("/post/{id}", postAuth(handler.UpdatePost)).Methods("PUT")

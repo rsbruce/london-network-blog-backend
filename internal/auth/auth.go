@@ -58,8 +58,16 @@ func (ah *AuthHandler) CanAccessUser(original func(w http.ResponseWriter, r *htt
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		id := session.Values["id"].(int64)
-		authenticated := session.Values["authenticated"].(bool)
+		id, ok := session.Values["id"].(int64)
+		if !ok {
+			http.Error(w, "Invalid credentials", http.StatusBadRequest)
+			return
+		}
+		authenticated, ok := session.Values["authenticated"].(bool)
+		if !ok {
+			http.Error(w, "Invalid credentials", http.StatusBadRequest)
+			return
+		}
 
 		if id == user.ID && authenticated {
 			original(w, r)

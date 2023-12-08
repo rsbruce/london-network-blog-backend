@@ -23,6 +23,7 @@ func (handler *HttpHandler) HandleCors(w http.ResponseWriter, r *http.Request) {
 		origin = "*"
 	}
 	w.Header().Add("Access-Control-Allow-Origin", origin)
+	w.Header().Add("Access-Control-Allow-Credentials", "true")
 	w.Header().Add("Access-Control-Allow-Headers", "*")
 	w.Header().Add("Access-Control-Allow-Methods", "*")
 	w.WriteHeader(http.StatusOK)

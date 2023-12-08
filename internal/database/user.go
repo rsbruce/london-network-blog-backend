@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"golang.org/x/crypto/bcrypt"
+	"os"
 )
 
 type UserProfileRow struct {
@@ -151,7 +152,7 @@ func (db *Database) UserHandleFromId(id int64) (string, error) {
 }
 
 func (db *Database) UpdateDisplayPicture(id int64, imagePath string) error {
-	_, err := db.Client.Exec(`UPDATE user SET display_picture = ? WHERE id = ?`, "http://localhost:8080/"+imagePath, id)
+	_, err := db.Client.Exec(`UPDATE user SET display_picture = ? WHERE id = ?`, os.Getenv("HOST_NAME")+"/"+imagePath, id)
 
 	return err
 }

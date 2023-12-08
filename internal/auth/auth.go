@@ -149,6 +149,7 @@ func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	requestId, err := strconv.Atoi(params["id"])
 	if err != nil {
+		log.Println("No ID in check auth")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
 		return
@@ -156,12 +157,14 @@ func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 
 	session, err := ah.store.Get(r, "ks_session")
 	if err != nil {
+		log.Println("Error getting session in check auth")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
 		return
 	}
 	id, ok := session.Values["id"].(int64)
 	if !ok {
+		log.Println("Bad ID in check auth")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
 		return
@@ -169,6 +172,7 @@ func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 
 	authenticated, ok := session.Values["authenticated"].(bool)
 	if !ok {
+		log.Println("Bad auth bool in check auth")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
 		return
@@ -176,6 +180,7 @@ func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 
 	handle, err := ah.DB_conn.UserHandleFromId(id)
 	if err != nil {
+		log.Println("Could not resolve handle in check auth")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
 		return

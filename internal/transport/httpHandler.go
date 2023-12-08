@@ -18,7 +18,11 @@ func NewHttpHandler(db *database.Database) *HttpHandler {
 }
 
 func (handler *HttpHandler) HandleCors(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	w.Header().Add("Access-Control-Allow-Origin", origin)
 	w.Header().Add("Access-Control-Allow-Headers", "*")
 	w.Header().Add("Access-Control-Allow-Methods", "*")
 	w.WriteHeader(http.StatusOK)

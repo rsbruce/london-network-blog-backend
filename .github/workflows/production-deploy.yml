@@ -1,0 +1,59 @@
+name: Go
+
+on:
+    push:
+        branches: ["main"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Set up Go
+              uses: actions/setup-go@v3
+              with:
+                  go-version: 1.21
+
+            - name: Dependencies
+              run: go mod download
+
+            - name: Build App
+              run: go build main.go
+
+            # - name: Test
+            #   run: go test -v ./...
+
+            - name: Rsync
+              uses: burnett01/rsync-deployments@6.0.0
+              with:
+                  switches: -av --exclude="" --include=""
+                  path: im_app
+                  remote_path: ${{ secrets.PRODUCTION_PATH }}
+                  remote_host: ${{ secrets.PRODUCTION_HOST }}
+                  remote_user: ${{ secrets.DEPLOY_USER }}
+                  remote_key: ${{ secrets.DEPLOY_KEY }}
+
+    restart:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Configure SSH
+              run: |
+                  mkdir -p ~/.ssh/
+                  echo "$SSH_KEY" > ~/.ssh/production.key
+                  chmod 600 ~/.ssh/production.key
+                  cat >>~/.ssh/config <<END
+                  Host production
+                    HostName $SSH_HOST
+                    User $SSH_USER
+                    IdentityFile ~/.ssh/production.key
+                    StrictHostKeyChecking no
+                  END
+              env:
+                  SSH_USER: ${{ secrets.DEPLOY_USER }}
+                  SSH_KEY: ${{ secrets.DEPLOY_KEY }}
+                  SSH_HOST: ${{ secrets.PRODUCTION_HOST }}
+
+            - name: Restart the service
+              if: ${{ always() }}
+              run: ssh production 'sudo systemctl restart blogsite-api.service'

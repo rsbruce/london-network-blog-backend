@@ -41,6 +41,7 @@ func NewAuthHandler(db *database.Database) *AuthHandler {
 
 func (ah *AuthHandler) CanAccessUser(original func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 
 		decoder := json.NewDecoder(r.Body)
 		var user database.User
@@ -70,6 +71,7 @@ func (ah *AuthHandler) CanAccessUser(original func(w http.ResponseWriter, r *htt
 
 func (ah *AuthHandler) CanAccessPost(original func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 
 		decoder := json.NewDecoder(r.Body)
 		var post database.Post

@@ -143,8 +143,14 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	w.Header().Add("Access-Control-Allow-Origin", origin)
+	w.Header().Add("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Content-Type", "application/json")
+	log.Printf("Incoming request from: %s\n", r.Header.Get("Origin"))
 
 	params := mux.Vars(r)
 	requestId, err := strconv.Atoi(params["id"])

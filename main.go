@@ -37,27 +37,25 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
 
-	api := r.PathPrefix("/api").Subrouter()
-
-	api.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
-	api.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
-	api.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
-	api.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
-	api.HandleFunc("/login", authHandler.Login).Methods("POST")
-	api.HandleFunc("/checkAuth/{id}", authHandler.CheckAuth)
-	api.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
-	api.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
+	r.HandleFunc("/api/text-content/{slug}", handler.GetTextContent).Methods("GET")
+	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
+	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
+	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
+	r.HandleFunc("/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/checkAuth/{id}", authHandler.CheckAuth)
+	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
+	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
 
 	// AUTH ROUTES
-	api.HandleFunc("/user/{handle}", userAuth(handler.UpdateUserProfile)).Methods("PUT")
-	api.HandleFunc("/new-password", userAuth(handler.UpdatePassword)).Methods("PUT")
-	api.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
+	r.HandleFunc("/user/{handle}", userAuth(handler.UpdateUserProfile)).Methods("PUT")
+	r.HandleFunc("/new-password", userAuth(handler.UpdatePassword)).Methods("PUT")
+	r.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
 
-	api.HandleFunc("/new-post", postAuth(handler.NewPost)).Methods("POST")
-	api.HandleFunc("/post/{id}", postAuth(handler.UpdatePost)).Methods("PUT")
-	api.HandleFunc("/post/{id}", postAuth(handler.DeletePost)).Methods("DELETE")
-	api.HandleFunc("/post/archive/{id}", postAuth(handler.ArchivePost)).Methods("PUT")
-	api.HandleFunc("/post/restore/{id}", postAuth(handler.RestorePost)).Methods("PUT")
+	r.HandleFunc("/new-post", postAuth(handler.NewPost)).Methods("POST")
+	r.HandleFunc("/post/{id}", postAuth(handler.UpdatePost)).Methods("PUT")
+	r.HandleFunc("/post/{id}", postAuth(handler.DeletePost)).Methods("DELETE")
+	r.HandleFunc("/post/archive/{id}", postAuth(handler.ArchivePost)).Methods("PUT")
+	r.HandleFunc("/post/restore/{id}", postAuth(handler.RestorePost)).Methods("PUT")
 
 }
 

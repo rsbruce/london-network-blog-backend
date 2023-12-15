@@ -37,7 +37,7 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
 
-	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
+	r.HandleFunc("/api/text-content/{slug}", handler.GetTextContent).Methods("GET")
 	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
 	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
 	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")

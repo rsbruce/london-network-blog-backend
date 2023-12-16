@@ -3,15 +3,17 @@ package transport
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/sessions"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"rsbruce/blogsite-api/internal/auth"
 	"rsbruce/blogsite-api/internal/database"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/sessions"
 
 	"github.com/gorilla/mux"
 )
@@ -49,14 +51,12 @@ func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Reques
 
 func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	handle := params["handle"]
-
+	var request struct {
+		User        database.User  `json:"user"`
+		Auth_tokens auth.TokenPair `json:"auth_tokens"`
+	}
 	decoder := json.NewDecoder(r.Body)
-
-	var user_changes database.User
-	err := decoder.Decode(&user_changes)
+	err := decoder.Decode(&request)
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -64,7 +64,18 @@ func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user, err := handler.DB_conn.UpdateUser(handle, user_changes)
+	auth_tokens, err := request.Auth_tokens.GetNewTokenPair()
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Bad tokens"})
+		return
+	}
+
+	access_token := auth.ParseAccessToken(auth_tokens.AccessToken)
+	request.User.ID = access_token.ID
+
+	user, err := handler.DB_conn.UpdateUser(request.User)
 
 	if err != nil {
 		log.Print(err)

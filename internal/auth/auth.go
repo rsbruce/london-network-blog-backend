@@ -2,31 +2,34 @@ package auth
 
 import (
 	"rsbruce/blogsite-api/internal/database"
-	"rsbruce/blogsite-api/internal/transport"
 
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
+	_ "github.com/joho/godotenv/autoload"
 )
+
+type UserClaims struct {
+	ID int64
+	jwt.StandardClaims
+}
+
+type TokenPair struct {
+	AccessToken  string `json:"access_token" binding:"required"`
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
 
 type AuthHandler struct {
 	store   *sessions.CookieStore
 	DB_conn *database.Database
 }
 
-type ResponseMessage transport.ResponseMessage
-
-type AuthResponse struct {
-	Status string `json:"status"`
-	Auth   string `json:"auth"`
-	UserId int64  `json:"userId"`
-}
 type AuthCheck struct {
 	Message string `json:"message"`
 	Handle  string `json:"handle"`
@@ -36,74 +39,6 @@ func NewAuthHandler(db *database.Database) *AuthHandler {
 	return &AuthHandler{
 		store:   sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY"))),
 		DB_conn: db,
-	}
-}
-
-func (ah *AuthHandler) CanAccessUser(original func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-
-		decoder := json.NewDecoder(r.Body)
-		var user database.User
-		err := decoder.Decode(&user)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(ResponseMessage{Message: "Invalid JSON payload for this route."})
-			return
-		}
-
-		session, err := ah.store.Get(r, "ks_session")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		id, ok := session.Values["id"].(int64)
-		if !ok {
-			http.Error(w, "Invalid credentials", http.StatusBadRequest)
-			return
-		}
-		authenticated, ok := session.Values["authenticated"].(bool)
-		if !ok {
-			http.Error(w, "Invalid credentials", http.StatusBadRequest)
-			return
-		}
-
-		if id == user.ID && authenticated {
-			original(w, r)
-		} else {
-			http.Error(w, "Invalid credentials", http.StatusBadRequest)
-		}
-	}
-}
-
-func (ah *AuthHandler) CanAccessPost(original func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-
-		decoder := json.NewDecoder(r.Body)
-		var post database.Post
-		err := decoder.Decode(&post)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(ResponseMessage{Message: "Invalid JSON payload for this route."})
-			return
-		}
-
-		session, err := ah.store.Get(r, "ks_session")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		id := session.Values["id"].(int64)
-		authenticated := session.Values["authenticated"].(bool)
-
-		if id == post.Author_id && authenticated {
-			original(w, r)
-		} else {
-			http.Error(w, "Invalid credentials", http.StatusBadRequest)
-		}
 	}
 }
 
@@ -118,7 +53,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "Invalid JSON payload for this route."})
+		json.NewEncoder(w).Encode("Invalid JSON payload for this route.")
 		return
 	}
 
@@ -127,82 +62,103 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "Could not authenticate"})
+		json.NewEncoder(w).Encode("Could not authenticate")
 		return
 	}
 
-	session, err := ah.store.Get(r, "ks_session")
+	userClaims := UserClaims{
+		ID: id,
+		StandardClaims: jwt.StandardClaims{
+			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: time.Now().Add(time.Minute * 120).Unix(),
+		},
+	}
+
+	signedAccessToken, err := NewAccessToken(userClaims)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatal("error creating access token")
+	}
+
+	refreshClaims := jwt.StandardClaims{
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Add(time.Hour * 48).Unix(),
+	}
+
+	signedRefreshToken, err := NewRefreshToken(refreshClaims)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("error creating refresh token")
 		return
 	}
 
-	session.Values["id"] = id
-	session.Values["authenticated"] = true
-	session.Values["timestamp"] = time.Now().Unix()
+	handle, err := ah.DB_conn.UserHandleFromId(userClaims.ID)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Authenticated, but could not find handle")
+		return
+	}
+	var auth_response struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		Handle       string `json:"handle"`
+	}
+	auth_response.AccessToken = signedAccessToken
+	auth_response.RefreshToken = signedRefreshToken
+	auth_response.Handle = handle
 
-	err = session.Save(r, w)
-
-	json.NewEncoder(w).Encode(AuthResponse{
-		Status: "Success",
-		Auth:   w.Header().Get("Set-Cookie"),
-		UserId: id,
-	})
+	json.NewEncoder(w).Encode(auth_response)
 }
 
-func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "*"
-	}
-	w.Header().Add("Access-Control-Allow-Origin", origin)
-	w.Header().Add("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Content-Type", "application/json")
-	log.Printf("Incoming request from: %s\n", r.Header.Get("Origin"))
+func (token_pair *TokenPair) GetNewTokenPair() (TokenPair, error) {
+	var err error
+	userClaims := ParseAccessToken(token_pair.AccessToken)
+	refreshClaims := ParseRefreshToken(token_pair.RefreshToken)
 
-	params := mux.Vars(r)
-	requestId, err := strconv.Atoi(params["id"])
-	if err != nil {
-		log.Println("No ID in check auth")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
-		return
+	// refresh token is expired
+	if refreshClaims.Valid() != nil {
+		token_pair.RefreshToken, err = NewRefreshToken(*refreshClaims)
+		if err != nil {
+			return TokenPair{}, errors.New("Error creating refresh token")
+		}
 	}
 
-	session, err := ah.store.Get(r, "ks_session")
-	if err != nil {
-		log.Println("Error getting session in check auth")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
-		return
-	}
-	id, ok := session.Values["id"].(int64)
-	if !ok {
-		log.Println("Bad ID in check auth")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
-		return
+	// access token is expired
+	if userClaims.StandardClaims.Valid() != nil && refreshClaims.Valid() == nil {
+		token_pair.AccessToken, err = NewAccessToken(*userClaims)
+		if err != nil {
+			return TokenPair{}, errors.New("Error creating access token")
+		}
 	}
 
-	authenticated, ok := session.Values["authenticated"].(bool)
-	if !ok {
-		log.Println("Bad auth bool in check auth")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
-		return
-	}
+	return *token_pair, nil
+}
 
-	handle, err := ah.DB_conn.UserHandleFromId(id)
-	if err != nil {
-		log.Println("Could not resolve handle in check auth")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(AuthCheck{Message: "Failed"})
-		return
-	}
+func NewAccessToken(claims UserClaims) (string, error) {
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	if id == int64(requestId) && authenticated {
-		json.NewEncoder(w).Encode(AuthCheck{Message: "Success", Handle: handle})
-	} else {
-		http.Error(w, "Invalid credentials", http.StatusBadRequest)
-	}
+	return accessToken.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
+}
+
+func NewRefreshToken(claims jwt.StandardClaims) (string, error) {
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return refreshToken.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
+}
+
+func ParseAccessToken(accessToken string) *UserClaims {
+	parsedAccessToken, _ := jwt.ParseWithClaims(accessToken, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
+	})
+
+	return parsedAccessToken.Claims.(*UserClaims)
+}
+
+func ParseRefreshToken(refreshToken string) *jwt.StandardClaims {
+	parsedRefreshToken, _ := jwt.ParseWithClaims(refreshToken, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
+	})
+
+	return parsedRefreshToken.Claims.(*jwt.StandardClaims)
 }

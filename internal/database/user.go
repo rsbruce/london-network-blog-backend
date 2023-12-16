@@ -3,8 +3,10 @@ package database
 import (
 	"database/sql"
 
-	"golang.org/x/crypto/bcrypt"
 	"os"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserProfileRow struct {
@@ -79,21 +81,23 @@ func (db *Database) GetUser(handle string) (User, error) {
 	return userFromRow(user_row), nil
 }
 
-func (db *Database) UpdateUser(handle string, user User) (User, error) {
+func (db *Database) UpdateUser(user User) (User, error) {
 
-	user_row := UserRow{
-		Handle:       sql.NullString{String: handle, Valid: true},
-		Display_name: sql.NullString{String: user.Display_name, Valid: true},
-		Blurb:        sql.NullString{String: user.Blurb, Valid: true},
+	var query_fields []string
+
+	if user.Handle != "" {
+		query_fields = append(query_fields, "handle = :handle")
+	}
+	if user.Display_name != "" {
+		query_fields = append(query_fields, "display_name = :display_name")
+	}
+	if user.Blurb != "" {
+		query_fields = append(query_fields, "blurb = :blurb")
 	}
 
-	rows, err := db.Client.NamedQuery(
-		`UPDATE user SET
-		blurb = :blurb,
-		display_name = :display_name
-		WHERE handle = :handle`,
-		user_row,
-	)
+	query := "UPDATE user SET " + strings.Join(query_fields, ", ") + " WHERE id = :id"
+
+	rows, err := db.Client.NamedQuery(query, user)
 
 	if err != nil {
 		return User{}, err
@@ -102,7 +106,7 @@ func (db *Database) UpdateUser(handle string, user User) (User, error) {
 		return User{}, err
 	}
 
-	return userFromRow(user_row), nil
+	return user, nil
 }
 
 func (db *Database) UpdatePassword(userAuth UserAuth) error {

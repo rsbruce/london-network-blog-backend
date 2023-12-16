@@ -81,7 +81,7 @@ func (handler *HttpHandler) ArchivePost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if handler.canEditPost(r, id) {
-		err = handler.DB_conn.RestorePost(id)
+		err = handler.DB_conn.ArchivePost(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(ResponseMessage{Message: "Could not restore post"})

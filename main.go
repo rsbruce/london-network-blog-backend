@@ -43,9 +43,9 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	r.HandleFunc("/profile-picture", handler.UploadProfilePicture).Methods("POST")
 	r.HandleFunc("/post", handler.NewPost).Methods("POST")
 	r.HandleFunc("/post", handler.UpdatePost).Methods("PUT")
-	r.HandleFunc("/post", handler.DeletePost).Methods("DELETE")
-	r.HandleFunc("/post/archive", handler.ArchivePost).Methods("PUT")
-	r.HandleFunc("/post/restore", handler.RestorePost).Methods("PUT")
+	r.HandleFunc("/post/{id}", handler.DeletePost).Methods("DELETE")
+	r.HandleFunc("/post/archive/{id}", handler.ArchivePost).Methods("PUT")
+	r.HandleFunc("/post/restore/{id}", handler.RestorePost).Methods("PUT")
 
 }
 

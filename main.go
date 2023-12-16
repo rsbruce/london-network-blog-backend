@@ -39,13 +39,13 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	// AUTH ROUTES
 	r.HandleFunc("/user", handler.UpdateUserProfile).Methods("PUT")
-	r.HandleFunc("/new-password", handler.UpdatePassword).Methods("PUT")
-	r.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
-	r.HandleFunc("/new-post", handler.NewPost).Methods("POST")
-	r.HandleFunc("/post/{id}", handler.UpdatePost).Methods("PUT")
-	r.HandleFunc("/post/{id}", handler.DeletePost).Methods("DELETE")
-	r.HandleFunc("/post/archive/{id}", handler.ArchivePost).Methods("PUT")
-	r.HandleFunc("/post/restore/{id}", handler.RestorePost).Methods("PUT")
+	r.HandleFunc("/reset-password", handler.UpdatePassword).Methods("PUT")
+	r.HandleFunc("/profile-picture", handler.UploadProfilePicture).Methods("POST")
+	r.HandleFunc("/post", handler.NewPost).Methods("POST")
+	r.HandleFunc("/post", handler.UpdatePost).Methods("PUT")
+	r.HandleFunc("/post", handler.DeletePost).Methods("DELETE")
+	r.HandleFunc("/post/archive", handler.ArchivePost).Methods("PUT")
+	r.HandleFunc("/post/restore", handler.RestorePost).Methods("PUT")
 
 }
 

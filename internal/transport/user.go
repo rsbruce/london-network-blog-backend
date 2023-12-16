@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"rsbruce/blogsite-api/internal/auth"
 	"rsbruce/blogsite-api/internal/database"
-	"strconv"
 	"time"
 
 	"github.com/gorilla/sessions"
@@ -67,7 +66,6 @@ func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Req
 		json.NewEncoder(w).Encode(ResponseMessage{Message: "Access token invalid"})
 		return
 	}
-
 	user.ID = user_claims.ID
 
 	user, err = handler.DB_conn.UpdateUser(user)
@@ -96,6 +94,16 @@ func (handler *HttpHandler) UpdatePassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	access_token := r.Header.Get("Authorization")
+	user_claims, err := auth.ParseAccessToken(access_token)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Access token invalid"})
+		return
+	}
+	user_auth.ID = user_claims.ID
+
 	err = handler.DB_conn.UpdatePassword(user_auth)
 
 	if err != nil {
@@ -110,18 +118,21 @@ func (handler *HttpHandler) UpdatePassword(w http.ResponseWriter, r *http.Reques
 }
 
 func (handler *HttpHandler) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(32 << 20) // limit your max input length!
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
+	r.ParseMultipartForm(5 << 20) // limit your max input length!
+	access_token := r.Header.Get("Authorization")
+	user_claims, err := auth.ParseAccessToken(access_token)
 	if err != nil {
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "Failed"})
-		panic(err)
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Access token invalid"})
+		return
 	}
+	id := user_claims.ID
 
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		json.NewEncoder(w).Encode(ResponseMessage{Message: "Failed"})
-		panic(err)
+		return
 	}
 	defer file.Close()
 
@@ -129,18 +140,21 @@ func (handler *HttpHandler) UploadProfilePicture(w http.ResponseWriter, r *http.
 
 	outputFile, err := createPath(uploadPath)
 	if err != nil {
-		panic(err)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Failed"})
+		return
 	}
 	defer outputFile.Close()
 
 	_, err = io.Copy(outputFile, file)
 	if err != nil {
-		panic(err)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Failed"})
+		return
 	}
 
-	err = handler.DB_conn.UpdateDisplayPicture(int64(id), uploadPath)
+	err = handler.DB_conn.UpdateDisplayPicture(id, uploadPath)
 	if err != nil {
-		panic(err)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Failed"})
+		return
 	}
 
 	json.NewEncoder(w).Encode(ResponseMessage{Message: "Success"})

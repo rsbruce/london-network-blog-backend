@@ -89,7 +89,18 @@ func (db *Database) UpdatePost(post Post) (Post, error) {
 	return postFromRow(postRow), nil
 }
 
-func (db *Database) ArchivePost(id int) error {
+func (db *Database) GetAuthorIdFromPostId(id int64) (int64, error) {
+	row := db.Client.QueryRow(`SELECT author_id FROM post WHERE id = ?`, id)
+	var author_id int64
+	err := row.Scan(&author_id)
+	if err != nil {
+		return 0, err
+	}
+
+	return author_id, nil
+}
+
+func (db *Database) ArchivePost(id int64) error {
 	_, err := db.Client.Exec(`UPDATE post
 		SET deleted_at = ?
 		WHERE id = ?`,
@@ -98,7 +109,7 @@ func (db *Database) ArchivePost(id int) error {
 	return err
 }
 
-func (db *Database) RestorePost(id int) error {
+func (db *Database) RestorePost(id int64) error {
 	_, err := db.Client.Exec(`UPDATE post
 		SET deleted_at = NULL
 		WHERE id = ?`, id)
@@ -106,7 +117,7 @@ func (db *Database) RestorePost(id int) error {
 	return err
 }
 
-func (db *Database) DeletePost(id int) error {
+func (db *Database) DeletePost(id int64) error {
 	_, err := db.Client.Exec(`DELETE FROM post WHERE id = ?`, id)
 
 	return err

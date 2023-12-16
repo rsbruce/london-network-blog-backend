@@ -51,12 +51,9 @@ func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Reques
 
 func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
-	var request struct {
-		User        database.User  `json:"user"`
-		Auth_tokens auth.TokenPair `json:"auth_tokens"`
-	}
+	var user database.User
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&request)
+	err := decoder.Decode(&user)
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -64,18 +61,11 @@ func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	auth_tokens, err := request.Auth_tokens.GetNewTokenPair()
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ResponseMessage{Message: "Bad tokens"})
-		return
-	}
+	access_token := r.Header.Get("Authorization")
+	user_claims := auth.ParseAccessToken(access_token)
+	user.ID = user_claims.ID
 
-	access_token := auth.ParseAccessToken(auth_tokens.AccessToken)
-	request.User.ID = access_token.ID
-
-	user, err := handler.DB_conn.UpdateUser(request.User)
+	user, err = handler.DB_conn.UpdateUser(user)
 
 	if err != nil {
 		log.Print(err)

@@ -12,7 +12,6 @@ import (
 )
 
 func (handler *HttpHandler) GetPostPage(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	params := mux.Vars(r)
 	slug := params["slug"]
 
@@ -28,7 +27,6 @@ func (handler *HttpHandler) GetPostPage(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler *HttpHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	decoder := json.NewDecoder(r.Body)
@@ -54,7 +52,6 @@ func (handler *HttpHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *HttpHandler) ArchivePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -77,7 +74,6 @@ func (handler *HttpHandler) ArchivePost(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler *HttpHandler) RestorePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -100,7 +96,6 @@ func (handler *HttpHandler) RestorePost(w http.ResponseWriter, r *http.Request) 
 }
 
 func (handler *HttpHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -123,7 +118,6 @@ func (handler *HttpHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *HttpHandler) NewPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	decoder := json.NewDecoder(r.Body)

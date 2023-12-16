@@ -16,16 +16,9 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-func cors(fs http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Access-Control-Allow-Headers", "*")
-		w.Header().Add("Access-Control-Allow-Methods", "*")
-		fs.ServeHTTP(w, r)
-	}
-}
-
 func setupRoutes(r *mux.Router, db *database.Database) {
+
+	r.Use(transport.CorsMiddleWare)
 
 	handler := transport.NewHttpHandler(db)
 	authHandler := auth.NewAuthHandler(db)
@@ -33,7 +26,7 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	fs := http.FileServer(http.Dir("./static"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
-	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
+	r.PathPrefix("/").HandlerFunc(handler.PreFlight).Methods("OPTIONS")
 
 	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
 	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")

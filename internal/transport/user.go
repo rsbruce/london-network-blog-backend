@@ -21,7 +21,6 @@ import (
 var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 
 func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	params := mux.Vars(r)
 	handle := params["handle"]
 
@@ -50,7 +49,6 @@ func (handler *HttpHandler) GetUserProfile(w http.ResponseWriter, r *http.Reques
 }
 
 func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	var user database.User
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&user)
@@ -85,7 +83,6 @@ func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Req
 }
 
 func (handler *HttpHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	decoder := json.NewDecoder(r.Body)
@@ -113,7 +110,6 @@ func (handler *HttpHandler) UpdatePassword(w http.ResponseWriter, r *http.Reques
 }
 
 func (handler *HttpHandler) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	r.ParseMultipartForm(32 << 20) // limit your max input length!
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

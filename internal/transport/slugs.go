@@ -9,7 +9,6 @@ import (
 )
 
 func (handler *HttpHandler) GetSlugsForUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	params := mux.Vars(r)
 	handle := params["handle"]
 

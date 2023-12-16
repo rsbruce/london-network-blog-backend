@@ -10,7 +10,6 @@ import (
 )
 
 func (handler *HttpHandler) GetLatestAllAuthors(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	post_feed, err := handler.DB_conn.GetLatestPostFeed()
 	if err != nil {
 		log.Println(err)
@@ -22,7 +21,6 @@ func (handler *HttpHandler) GetLatestAllAuthors(w http.ResponseWriter, r *http.R
 }
 
 func (handler *HttpHandler) GetLatestForAuthor(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	params := mux.Vars(r)
 	handle := params["handle"]
 

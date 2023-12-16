@@ -17,14 +17,6 @@ func NewHttpHandler(db *database.Database) *HttpHandler {
 	return &HttpHandler{DB_conn: db}
 }
 
-func (handler *HttpHandler) HandleCors(w http.ResponseWriter, r *http.Request) {
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		origin = "*"
-	}
-	w.Header().Add("Access-Control-Allow-Origin", origin)
-	w.Header().Add("Access-Control-Allow-Credentials", "true")
-	w.Header().Add("Access-Control-Allow-Headers", "*")
-	w.Header().Add("Access-Control-Allow-Methods", "*")
-	w.WriteHeader(http.StatusOK)
+func (handler *HttpHandler) PreFlight(w http.ResponseWriter, r *http.Request) {
+
 }

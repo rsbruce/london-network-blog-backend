@@ -43,7 +43,6 @@ func NewAuthHandler(db *database.Database) *AuthHandler {
 }
 
 func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	var auth_response struct {
 		Message string `json:"message"`
@@ -75,7 +74,6 @@ func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	decoder := json.NewDecoder(r.Body)

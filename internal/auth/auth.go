@@ -42,6 +42,38 @@ func NewAuthHandler(db *database.Database) *AuthHandler {
 	}
 }
 
+func (ah *AuthHandler) CheckAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	var auth_response struct {
+		Message string `json:"message"`
+		Handle  string `json:"handle"`
+	}
+
+	access_token := r.Header.Get("Authorization")
+	user_claims, err := ParseAccessToken(access_token)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusBadRequest)
+		auth_response.Message = "Failed"
+		json.NewEncoder(w).Encode(auth_response)
+		return
+	}
+	id := user_claims.ID
+	handle, err := ah.DB_conn.UserHandleFromId(id)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Authenticated, but could not find handle")
+		return
+	}
+
+	auth_response.Message = "Success"
+	auth_response.Handle = handle
+
+	json.NewEncoder(w).Encode(auth_response)
+}
+
 func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
@@ -113,8 +145,14 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (token_pair *TokenPair) GetNewTokenPair() (TokenPair, error) {
 	var err error
-	userClaims := ParseAccessToken(token_pair.AccessToken)
-	refreshClaims := ParseRefreshToken(token_pair.RefreshToken)
+	userClaims, err := ParseAccessToken(token_pair.AccessToken)
+	if err != nil {
+		return TokenPair{}, errors.New("Access Token invalid")
+	}
+	refreshClaims, err := ParseRefreshToken(token_pair.RefreshToken)
+	if err != nil {
+		return TokenPair{}, errors.New("Refresh Token invalid")
+	}
 
 	// refresh token is expired
 	if refreshClaims.Valid() != nil {
@@ -147,18 +185,18 @@ func NewRefreshToken(claims jwt.StandardClaims) (string, error) {
 	return refreshToken.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 }
 
-func ParseAccessToken(accessToken string) *UserClaims {
-	parsedAccessToken, _ := jwt.ParseWithClaims(accessToken, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ParseAccessToken(accessToken string) (*UserClaims, error) {
+	parsedAccessToken, err := jwt.ParseWithClaims(accessToken, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 
-	return parsedAccessToken.Claims.(*UserClaims)
+	return parsedAccessToken.Claims.(*UserClaims), err
 }
 
-func ParseRefreshToken(refreshToken string) *jwt.StandardClaims {
-	parsedRefreshToken, _ := jwt.ParseWithClaims(refreshToken, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ParseRefreshToken(refreshToken string) (*jwt.StandardClaims, error) {
+	parsedRefreshToken, err := jwt.ParseWithClaims(refreshToken, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 
-	return parsedRefreshToken.Claims.(*jwt.StandardClaims)
+	return parsedRefreshToken.Claims.(*jwt.StandardClaims), err
 }

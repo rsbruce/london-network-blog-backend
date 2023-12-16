@@ -40,6 +40,7 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
 	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
 	r.HandleFunc("/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/check-auth", authHandler.CheckAuth).Methods("GET")
 	r.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
 	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
 

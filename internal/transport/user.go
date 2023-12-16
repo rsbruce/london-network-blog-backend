@@ -62,7 +62,14 @@ func (handler *HttpHandler) UpdateUserProfile(w http.ResponseWriter, r *http.Req
 	}
 
 	access_token := r.Header.Get("Authorization")
-	user_claims := auth.ParseAccessToken(access_token)
+	user_claims, err := auth.ParseAccessToken(access_token)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ResponseMessage{Message: "Access token invalid"})
+		return
+	}
+
 	user.ID = user_claims.ID
 
 	user, err = handler.DB_conn.UpdateUser(user)

@@ -162,12 +162,12 @@ func postPageFromRow(post_row PostRow, user_row UserRow) PostPage {
 	}
 }
 
-func (db *Database) GetPostWithUser(slug string) (PostPage, error) {
+func (db *Database) GetPostWithUser(slug string, handle string) (PostPage, error) {
 	row := db.Client.QueryRow(
 		`SELECT post.id, post.author_id, post.title, post.subtitle, post.content, post.slug, post.main_image, post.created_at, user.display_name, user.display_picture, user.handle 
         FROM post 
         INNER JOIN user on post.author_id = user.id 
-        WHERE post.slug = ?`, slug)
+        WHERE post.slug = ? and user.handle = ?`, slug, handle)
 	var post_row PostRow
 	var user_row UserRow
 

@@ -15,8 +15,9 @@ import (
 func (handler *HttpHandler) GetPostPage(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	slug := params["slug"]
+	handle := params["handle"]
 
-	post_with_user, err := handler.DB_conn.GetPostWithUser(slug)
+	post_with_user, err := handler.DB_conn.GetPostWithUser(slug, handle)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(ResponseMessage{Message: fmt.Sprintf("Post not found with slug: %s", slug)})

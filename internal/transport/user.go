@@ -129,6 +129,8 @@ func (handler *HttpHandler) UploadProfilePicture(w http.ResponseWriter, r *http.
 	}
 	id := user_claims.ID
 
+	fmt.Println(r.FormValue("testkey"))
+
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		json.NewEncoder(w).Encode(ResponseMessage{Message: "Failed"})

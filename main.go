@@ -28,16 +28,16 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 	r.PathPrefix("/").HandlerFunc(handler.PreFlight).Methods("OPTIONS")
 
-	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
-	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
-	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
-	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
 	r.HandleFunc("/login", authHandler.Login).Methods("POST")
 	r.HandleFunc("/check-auth", authHandler.CheckAuth).Methods("GET")
+
+	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
+	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
 	r.HandleFunc("/post/{handle}/{slug}", handler.GetPostPage).Methods("GET")
 	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
+	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
+	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
 
-	// AUTH ROUTES
 	r.HandleFunc("/user", handler.UpdateUserProfile).Methods("PUT")
 	r.HandleFunc("/reset-password", handler.UpdatePassword).Methods("PUT")
 	r.HandleFunc("/profile-picture", handler.UploadProfilePicture).Methods("POST")

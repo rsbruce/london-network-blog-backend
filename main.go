@@ -11,7 +11,10 @@ import (
 	"rsbruce/blogsite-api/internal/database"
 	"rsbruce/blogsite-api/internal/transport"
 
+	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -49,6 +52,30 @@ func setupRoutes(r *mux.Router, db *database.Database) {
 
 }
 
+func NewDbConnection() (*sqlx.DB, error) {
+	log.Println("Setting up new database connection")
+
+	cfg := mysql.Config{
+		User:   os.Getenv("DB_USER"),
+		Passwd: os.Getenv("DB_PASS"),
+		Net:    "tcp",
+		Addr:   os.Getenv("DB_HOST"),
+		DBName: os.Getenv("DB_NAME"),
+	}
+
+	db, err := sqlx.Connect("mysql", cfg.FormatDSN())
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to database: %w", err)
+	}
+
+	pingErr := db.Ping()
+	if pingErr != nil {
+		return nil, fmt.Errorf("could not connect to database: %w", err)
+	}
+
+	return db, nil
+}
+
 func main() {
 	file, err := os.OpenFile("log.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -80,7 +107,6 @@ func main() {
 	fmt.Println("Connected!")
 
 	r := mux.NewRouter()
-
 	setupRoutes(r, db)
 
 	serveAddress := ":" + os.Getenv("SERVE_PORT")

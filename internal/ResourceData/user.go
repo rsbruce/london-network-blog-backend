@@ -127,23 +127,6 @@ func (db *Database) UpdatePassword(userAuth UserAuth) error {
 	return err
 }
 
-func (db *Database) CheckPassword(userAuth UserAuth) (int64, error) {
-
-	password := []byte(userAuth.Password)
-
-	var storedHash []byte
-	var id int64
-	row := db.Client.QueryRow(`SELECT password, id FROM user WHERE handle = ?`, userAuth.Handle)
-	err := row.Scan(&storedHash, &id)
-	if err != nil {
-		return 0, err
-	}
-
-	err = bcrypt.CompareHashAndPassword(storedHash, password)
-
-	return id, err
-}
-
 func (db *Database) UserHandleFromId(id int64) (string, error) {
 	var handle string
 	row := db.Client.QueryRow(`SELECT handle FROM user WHERE id = ?`, id)

@@ -2,52 +2,35 @@ package authroutes
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"rsbruce/blogsite-api/internal/authdata"
 )
 
 type Service struct {
-	router      *mux.Router
-	dataService *authdata.Service
-}
-
-func NewService(router *mux.Router, ads *authdata.Service) *Service {
-	return &Service{
-		router:      router,
-		dataService: ads,
-	}
+	AuthDataService *authdata.Service
 }
 
 func (svc *Service) UserHandle(w http.ResponseWriter, r *http.Request) {
-	// var auth_response struct {
-	// 	Message string `json:"message"`
-	// 	Handle  string `json:"handle"`
-	// }
+	var authResponse struct {
+		Message string `json:"message"`
+		Handle  string `json:"handle"`
+	}
 
-	// access_token := r.Header.Get("Authorization")
-	// user_claims, err := ParseAccessToken(access_token)
-	// if err != nil {
-	// 	log.Print(err)
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	auth_response.Message = "Failed"
-	// 	json.NewEncoder(w).Encode(auth_response)
-	// 	return
-	// }
-	// id := user_claims.ID
-	// handle, err := ah.DB_conn.UserHandleFromId(id)
-	// if err != nil {
-	// 	log.Print(err)
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	json.NewEncoder(w).Encode("Authenticated, but could not find handle")
-	// 	return
-	// }
+	accessToken := r.Header.Get("Authorization")
+	handle, err := svc.AuthDataService.GetHandleFromAccessToken(accessToken)
 
-	// auth_response.Message = "Success"
-	// auth_response.Handle = handle
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		authResponse.Message = "Failed"
+	} else {
+		authResponse.Message = "Success"
+		authResponse.Handle = handle
+	}
 
-	// json.NewEncoder(w).Encode(auth_response)
+	json.NewEncoder(w).Encode(authResponse)
 }
 
 func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +44,7 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := svc.dataService.CheckPassword(credentials)
+	id, err := svc.AuthDataService.CheckPassword(credentials)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -69,7 +52,7 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, refreshToken, err := svc.dataService.GenerateTokensFromId(id)
+	accessToken, refreshToken, err := svc.AuthDataService.GenerateTokensFromId(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("error creating refresh token")

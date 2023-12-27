@@ -24,10 +24,6 @@ type LoginCredentials struct {
 	Password string
 }
 
-func NewService(dbConn *sqlx.DB) *Service {
-	return &Service{DbConn: dbConn}
-}
-
 func (svc *Service) CheckPassword(creds LoginCredentials) (int64, error) {
 
 	password := []byte(creds.Password)
@@ -69,6 +65,24 @@ func (svc *Service) GenerateTokensFromId(id int64) (string, string, error) {
 	}
 
 	return signedAccessToken, signedRefreshToken, nil
+}
+
+func (svc *Service) GetHandleFromAccessToken(accessToken string) (string, error) {
+	var handle string
+
+	userClaims, err := ParseAccessToken(accessToken)
+	if err != nil {
+		return "", err
+	}
+	id := userClaims.ID
+
+	row := svc.DbConn.QueryRow(`SELECT handle FROM user WHERE id = ?`, id)
+	err = row.Scan(&handle)
+	if err != nil {
+		return "", err
+	}
+
+	return handle, nil
 }
 
 func NewAccessToken(claims UserClaims) (string, error) {

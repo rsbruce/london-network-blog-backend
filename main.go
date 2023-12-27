@@ -7,9 +7,8 @@ import (
 
 	"net/http"
 
-	"rsbruce/blogsite-api/internal/auth"
-	"rsbruce/blogsite-api/internal/database"
-	"rsbruce/blogsite-api/internal/transport"
+	"rsbruce/blogsite-api/internal/authdata"
+	"rsbruce/blogsite-api/internal/authroutes"
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
@@ -19,36 +18,32 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-func setupRoutes(r *mux.Router, db *database.Database) {
+var authDataService *authdata.Service
+var authRoutesService *authroutes.Service
 
-	r.Use(transport.CorsMiddleWare)
-
-	handler := transport.NewHttpHandler(db)
-	authHandler := auth.NewAuthHandler(db)
+func setupRoutes(r *mux.Router) {
 
 	fs := http.FileServer(http.Dir("./static"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
-	r.PathPrefix("/").HandlerFunc(handler.PreFlight).Methods("OPTIONS")
+	r.HandleFunc("/login", authRoutesService.Login).Methods("POST")
+	r.HandleFunc("/user-handle", authRoutesService.UserHandle).Methods("GET")
 
-	r.HandleFunc("/login", authHandler.Login).Methods("POST")
-	r.HandleFunc("/check-auth", authHandler.CheckAuth).Methods("GET")
+	// r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
+	// r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
+	// r.HandleFunc("/post/{handle}/{slug}", handler.GetPostPage).Methods("GET")
+	// r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
+	// r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
+	// r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
 
-	r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
-	r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
-	r.HandleFunc("/post/{handle}/{slug}", handler.GetPostPage).Methods("GET")
-	r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
-	r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
-	r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
-
-	r.HandleFunc("/user", handler.UpdateUserProfile).Methods("PUT")
-	r.HandleFunc("/reset-password", handler.UpdatePassword).Methods("PUT")
-	r.HandleFunc("/profile-picture", handler.UploadProfilePicture).Methods("POST")
-	r.HandleFunc("/post", handler.NewPost).Methods("POST")
-	r.HandleFunc("/post", handler.UpdatePost).Methods("PUT")
-	r.HandleFunc("/post/{id}", handler.DeletePost).Methods("DELETE")
-	r.HandleFunc("/post/archive/{id}", handler.ArchivePost).Methods("PUT")
-	r.HandleFunc("/post/restore/{id}", handler.RestorePost).Methods("PUT")
+	// r.HandleFunc("/user", handler.UpdateUserProfile).Methods("PUT")
+	// r.HandleFunc("/reset-password", handler.UpdatePassword).Methods("PUT")
+	// r.HandleFunc("/profile-picture", handler.UploadProfilePicture).Methods("POST")
+	// r.HandleFunc("/post", handler.NewPost).Methods("POST")
+	// r.HandleFunc("/post", handler.UpdatePost).Methods("PUT")
+	// r.HandleFunc("/post/{id}", handler.DeletePost).Methods("DELETE")
+	// r.HandleFunc("/post/archive/{id}", handler.ArchivePost).Methods("PUT")
+	// r.HandleFunc("/post/restore/{id}", handler.RestorePost).Methods("PUT")
 
 }
 
@@ -86,28 +81,27 @@ func main() {
 
 	log.Println("App started")
 
+	defer func() {
+		file.Close()
+	}()
+
 	err = godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	defer func() {
-		file.Close()
-	}()
-
-	db, err := database.NewDatabase()
+	authDb, err := NewDbConnection()
+	// resourceDb, err := NewDbConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pingErr := db.Client.Ping()
-	if pingErr != nil {
-		log.Fatal(pingErr)
-	}
 	fmt.Println("Connected!")
 
+	authDataService = &authdata.Service{DbConn: authDb}
+	authRoutesService = &authroutes.Service{AuthDataService: authDataService}
+
 	r := mux.NewRouter()
-	setupRoutes(r, db)
+	setupRoutes(r)
 
 	serveAddress := ":" + os.Getenv("SERVE_PORT")
 	if err := http.ListenAndServe(serveAddress, r); err != nil {

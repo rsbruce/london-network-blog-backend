@@ -1,6 +1,9 @@
 package resourcedata
 
-import "log"
+import (
+	"log"
+	"time"
+)
 
 func (svc *Service) GetPost(authorHandle string, slug string) (*Post, error) {
 	var postRow PostRow
@@ -39,6 +42,54 @@ func (svc *Service) CreatePost(post Post) error {
 		(author_id, title, slug, subtitle, content, main_image, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, postRow.AuthorID, postRow.Title, postRow.Slug, postRow.Subtitle, postRow.Content, postRow.MainImage, postRow.CreatedAt)
+
+	return err
+}
+
+func (svc *Service) UpdatePost(post Post) error {
+	postRow := post.GetRow()
+
+	rows, err := svc.DbConn.NamedQuery(
+		`UPDATE post SET
+		slug = :slug,
+		title = :title,
+		subtitle = :subtitle,
+		content = :content,
+		main_image = :main_image,
+		updated_at = :updated_at
+		WHERE id = :id`,
+		postRow,
+	)
+
+	if err != nil {
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc *Service) ArchivePost(id int64) error {
+	_, err := svc.DbConn.Exec(`UPDATE post
+		SET deleted_at = ?
+		WHERE id = ?`,
+		time.Now().Format(time.DateTime), id)
+
+	return err
+}
+
+func (svc *Service) RestorePost(id int64) error {
+	_, err := svc.DbConn.Exec(`UPDATE post
+		SET deleted_at = NULL
+		WHERE id = ?`, id)
+
+	return err
+}
+
+func (svc *Service) DeletePost(id int64) error {
+	_, err := svc.DbConn.Exec(`DELETE FROM post WHERE id = ?`, id)
 
 	return err
 }

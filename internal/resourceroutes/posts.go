@@ -75,6 +75,13 @@ func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {
 
 	post.AuthorID = id
 	post.UpdatedAt = time.Now().Format(time.DateTime)
+	err = svc.ResourceData.UpdatePost(post)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
 }
 
 func (svc *Service) DeletePost(w http.ResponseWriter, r *http.Request) {

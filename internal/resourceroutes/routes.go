@@ -16,7 +16,6 @@ type Service struct {
 
 func (svc *Service) GetTextContent(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-
 	slug := params["slug"]
 
 	content, err := svc.ResourceData.GetTextContent(slug)
@@ -29,7 +28,15 @@ func (svc *Service) GetTextContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (svc *Service) GetUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	handle := params["handle"]
 
+	user, err := svc.ResourceData.GetUser(handle)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	json.NewEncoder(w).Encode(user)
 }
 
 func (svc *Service) UploadPhoto(w http.ResponseWriter, r *http.Request) {

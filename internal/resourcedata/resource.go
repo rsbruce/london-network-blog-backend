@@ -22,3 +22,28 @@ func (svc *Service) GetTextContent(slug string) (string, error) {
 
 	return content, nil
 }
+
+func (svc *Service) GetUser(handle string) (*User, error) {
+	var userRow UserRow
+
+	row := svc.DbConn.QueryRow(`
+		SELECT display_name, display_picture, blurb, user_role, created_at
+		FROM user
+		WHERE handle = ?
+	`, handle)
+
+	err := row.Scan(
+		&userRow.DisplayName,
+		&userRow.DisplayPicture,
+		&userRow.Blurb,
+		&userRow.UserRole,
+		&userRow.CreatedAt,
+	)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return userRow.GetUser(), nil
+} 

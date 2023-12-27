@@ -3,6 +3,7 @@ package resourcedata
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -59,4 +60,35 @@ func (svc *Service) UpdatePostImage(author_id int64, slug string, imagePath stri
 	_, err := svc.DbConn.Exec(`UPDATE post SET main_image = ? WHERE author_id = ? AND slug = ?`, os.Getenv("HOST_NAME")+"/"+imagePath, author_id, slug)
 
 	return err
+}
+func (svc *Service) EditUser(user User) error {
+	var (
+		columns []string
+		values  []interface{}
+	)
+	if user.Blurb != "" {
+		columns = append(columns, "blurb")
+		values = append(values, user.Blurb)
+	}
+	if user.DisplayName != "" {
+		columns = append(columns, "display_name")
+		values = append(values, user.Blurb)
+	}
+	if user.DisplayPicture != "" {
+		columns = append(columns, "display_picture")
+		values = append(values, user.DisplayPicture)
+	}
+	values = append(values, user.ID)
+
+	if len(columns) > 0 {
+		query := `
+			UPDATE user SET ` + strings.Join(columns, " = ?, ") + ` = ?  WHERE id = ?`
+
+		_, err := svc.DbConn.Exec(query, values...)
+
+		return err
+	}
+
+	return nil
+
 }

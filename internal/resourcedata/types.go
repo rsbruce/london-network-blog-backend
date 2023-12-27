@@ -6,7 +6,7 @@ import (
 
 type Post struct {
 	ID        int64  `json:"id,omitempty"`
-	AuthorID        int64  `json:"author_id,omitempty"`
+	AuthorID  int64  `json:"author_id,omitempty"`
 	Title     string `json:"title,omitempty"`
 	Subtitle  string `json:"subtitle,omitempty"`
 	Slug      string `json:"slug,omitempty"`
@@ -19,7 +19,7 @@ type Post struct {
 
 type PostRow struct {
 	ID        int64
-	AuthorID        int64
+	AuthorID  int64
 	Title     string
 	Subtitle  sql.NullString
 	Slug      string
@@ -46,10 +46,10 @@ func (pr *PostRow) GetPost() *Post {
 
 func (p *Post) GetRow() PostRow {
 	postRow := PostRow{
-		ID: p.ID,
-		AuthorID: p.AuthorID,
-		Title: p.Title,
-		Slug: p.Slug,
+		ID:        p.ID,
+		AuthorID:  p.AuthorID,
+		Title:     p.Title,
+		Slug:      p.Slug,
 		CreatedAt: p.CreatedAt,
 	}
 	if p.Subtitle != "" {
@@ -80,29 +80,53 @@ type User struct {
 }
 
 type UserRow struct {
-	ID             sql.NullInt64
+	ID             int64
 	DisplayName    sql.NullString
 	DisplayPicture sql.NullString
-	Handle         sql.NullString
+	Handle         string
 	Blurb          sql.NullString
 	UserRole       sql.NullString
-	CreatedAt      sql.NullString
+	CreatedAt      string
 	UpdatedAt      sql.NullString
 	DeletedAt      sql.NullString
 }
 
 func (ur *UserRow) GetUser() *User {
 	return &User{
-		ID:             ur.ID.Int64,
+		ID:             ur.ID,
 		DisplayName:    ur.DisplayName.String,
 		DisplayPicture: ur.DisplayPicture.String,
-		Handle:         ur.Handle.String,
+		Handle:         ur.Handle,
 		Blurb:          ur.Blurb.String,
 		UserRole:       ur.UserRole.String,
-		CreatedAt:      ur.CreatedAt.String,
+		CreatedAt:      ur.CreatedAt,
 		UpdatedAt:      ur.UpdatedAt.String,
 		DeletedAt:      ur.DeletedAt.String,
 	}
+}
+
+func (u *User) GetRow() UserRow {
+	userRow := UserRow{
+		ID:        u.ID,
+		Handle:    u.Handle,
+		CreatedAt: u.CreatedAt,
+	}
+	if u.DisplayName != "" {
+		userRow.DisplayName = sql.NullString{String: u.DisplayName, Valid: true}
+	}
+	if u.DisplayPicture != "" {
+		userRow.DisplayPicture = sql.NullString{String: u.DisplayPicture, Valid: true}
+	}
+	if u.Blurb != "" {
+		userRow.Blurb = sql.NullString{String: u.Blurb, Valid: true}
+	}
+	if u.UpdatedAt != "" {
+		userRow.UpdatedAt = sql.NullString{String: u.UpdatedAt, Valid: true}
+	}
+	if u.DeletedAt != "" {
+		userRow.DeletedAt = sql.NullString{String: u.DeletedAt, Valid: true}
+	}
+	return userRow
 }
 
 type FeedItem struct {

@@ -59,7 +59,7 @@ func (svc *Service) CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (svc *Service) UpdatePost(w http.ResponseWriter, r *http.Request) {
+func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {
 	var updated_post resourcedata.Post
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&updated_post)

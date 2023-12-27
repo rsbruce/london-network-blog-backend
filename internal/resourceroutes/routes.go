@@ -2,6 +2,7 @@ package resourceroutes
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"rsbruce/blogsite-api/internal/authdata"
 	"rsbruce/blogsite-api/internal/resourcedata"
@@ -40,5 +41,25 @@ func (svc *Service) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (svc *Service) EditUser(w http.ResponseWriter, r *http.Request) {
+	var user resourcedata.User
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	id, err := svc.AuthData.GetUserId(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	user.ID = id
+
+	err = svc.ResourceData.EditUser(user)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }

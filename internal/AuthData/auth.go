@@ -67,6 +67,14 @@ func (svc *Service) GenerateTokensFromId(id int64) (string, string, error) {
 	return signedAccessToken, signedRefreshToken, nil
 }
 
+func (svc *Service) GetIdFromAccessToken(accessToken string) (int64, error) {
+	userClaims, err := ParseAccessToken(accessToken)
+	if err != nil {
+		return 0, err
+	}
+	return userClaims.ID, nil
+}
+
 func (svc *Service) GetHandleFromAccessToken(accessToken string) (string, error) {
 	var handle string
 

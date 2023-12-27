@@ -40,6 +40,8 @@ func setupRoutes(r *mux.Router) {
 	r.HandleFunc("/upload-photo", resourceRoutesService.UploadPhoto).Methods("POST")
 	// READ
 	r.HandleFunc("/feed", resourceRoutesService.GetFeed).Methods("GET")
+	r.HandleFunc("/feed/{handle}", resourceRoutesService.GetSingleUserFeed).Methods("GET")
+	r.HandleFunc("/personal-feed", resourceRoutesService.GetPersonalFeed).Methods("GET")
 	r.HandleFunc("/post/{handle}/{slug}", resourceRoutesService.GetPost).Methods("GET")
 	r.HandleFunc("/text-content/{slug}", resourceRoutesService.GetTextContent).Methods("GET")
 	r.HandleFunc("/user/{handle}", resourceRoutesService.GetUser).Methods("GET")

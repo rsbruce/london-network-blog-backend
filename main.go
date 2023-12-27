@@ -9,6 +9,8 @@ import (
 
 	"rsbruce/blogsite-api/internal/authdata"
 	"rsbruce/blogsite-api/internal/authroutes"
+	"rsbruce/blogsite-api/internal/resourcedata"
+	"rsbruce/blogsite-api/internal/resourceroutes"
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
@@ -20,6 +22,8 @@ import (
 
 var authDataService *authdata.Service
 var authRoutesService *authroutes.Service
+var resourceDataService *resourcedata.Service
+var resourceRoutesService *resourceroutes.Service
 
 func setupRoutes(r *mux.Router) {
 
@@ -28,22 +32,23 @@ func setupRoutes(r *mux.Router) {
 
 	r.HandleFunc("/login", authRoutesService.Login).Methods("POST")
 	r.HandleFunc("/user-handle", authRoutesService.UserHandle).Methods("GET")
+	r.HandleFunc("/refresh-access", authRoutesService.RefreshAccess).Methods("GET")
+	r.HandleFunc("/reset-password", authRoutesService.ResetPassword).Methods("POST")
 
-	// r.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
-	// r.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
-	// r.HandleFunc("/post/{handle}/{slug}", handler.GetPostPage).Methods("GET")
-	// r.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
-	// r.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
-	// r.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
-
-	// r.HandleFunc("/user", handler.UpdateUserProfile).Methods("PUT")
-	// r.HandleFunc("/reset-password", handler.UpdatePassword).Methods("PUT")
-	// r.HandleFunc("/profile-picture", handler.UploadProfilePicture).Methods("POST")
-	// r.HandleFunc("/post", handler.NewPost).Methods("POST")
-	// r.HandleFunc("/post", handler.UpdatePost).Methods("PUT")
-	// r.HandleFunc("/post/{id}", handler.DeletePost).Methods("DELETE")
-	// r.HandleFunc("/post/archive/{id}", handler.ArchivePost).Methods("PUT")
-	// r.HandleFunc("/post/restore/{id}", handler.RestorePost).Methods("PUT")
+	// CREATE
+	r.HandleFunc("/post", resourceRoutesService.CreatePost).Methods("POST")
+	r.HandleFunc("/upload-photo", resourceRoutesService.UploadPhoto).Methods("POST")
+	// READ
+	r.HandleFunc("/feed", resourceRoutesService.GetFeed).Methods("GET")
+	r.HandleFunc("/post/{handle}/{slug}", resourceRoutesService.GetPost).Methods("GET")
+	r.HandleFunc("/text-content/{slug}", resourceRoutesService.GetTextContent).Methods("GET")
+	r.HandleFunc("/user/{handle}", resourceRoutesService.GetUser).Methods("GET")
+	// UPDATE
+	r.HandleFunc("/post/{slug}", resourceRoutesService.EditPost).Methods("PUT")
+	r.HandleFunc("/post/restore/{slug}", resourceRoutesService.RestorePost).Methods("PUT")
+	r.HandleFunc("/user", resourceRoutesService.EditUser).Methods("PUT")
+	// DELETE
+	r.HandleFunc("/post/{slug}", resourceRoutesService.DeletePost).Methods("DELETE")
 
 }
 
@@ -91,14 +96,20 @@ func main() {
 	}
 
 	authDb, err := NewDbConnection()
-	// resourceDb, err := NewDbConnection()
+	resourceDb, err := NewDbConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Connected!")
 
 	authDataService = &authdata.Service{DbConn: authDb}
-	authRoutesService = &authroutes.Service{AuthDataService: authDataService}
+	resourceDataService = &resourcedata.Service{DbConn: resourceDb}
+
+	authRoutesService = &authroutes.Service{AuthData: authDataService}
+	resourceRoutesService = &resourceroutes.Service{
+		AuthData:     authDataService,
+		ResourceData: resourceDataService,
+	}
 
 	r := mux.NewRouter()
 	setupRoutes(r)

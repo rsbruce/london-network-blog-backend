@@ -9,7 +9,7 @@ import (
 )
 
 type Service struct {
-	AuthDataService *authdata.Service
+	AuthData *authdata.Service
 }
 
 func (svc *Service) UserHandle(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func (svc *Service) UserHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken := r.Header.Get("Authorization")
-	handle, err := svc.AuthDataService.GetHandleFromAccessToken(accessToken)
+	handle, err := svc.AuthData.GetHandleFromAccessToken(accessToken)
 
 	if err != nil {
 		log.Println(err)
@@ -44,7 +44,7 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := svc.AuthDataService.CheckPassword(credentials)
+	id, err := svc.AuthData.CheckPassword(credentials)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -52,7 +52,7 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, refreshToken, err := svc.AuthDataService.GenerateTokensFromId(id)
+	accessToken, refreshToken, err := svc.AuthData.GenerateTokensFromId(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("error creating refresh token")
@@ -67,4 +67,12 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 	auth_response.RefreshToken = refreshToken
 
 	json.NewEncoder(w).Encode(auth_response)
+}
+
+func (svc *Service) RefreshAccess(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (svc *Service) ResetPassword(w http.ResponseWriter, r *http.Request) {
+
 }

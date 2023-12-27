@@ -30,3 +30,11 @@ func (svc *Service) GetPost(authorHandle string, slug string) (*Post, error) {
 
 	return postRow.GetPost(), nil
 }
+
+func (svc *Service) CreatePost(post Post) error {
+	query := `
+		INSERT INTO post ()
+	`
+
+	return nil
+}

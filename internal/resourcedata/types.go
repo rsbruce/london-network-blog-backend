@@ -17,29 +17,51 @@ type Post struct {
 }
 
 type PostRow struct {
-	ID        sql.NullInt64
-	Title     sql.NullString
+	ID        int64
+	Title     string
 	Subtitle  sql.NullString
-	Slug      sql.NullString
-	Content   sql.NullString
+	Slug      string
+	Content   string
 	MainImage sql.NullString
-	CreatedAt sql.NullString
+	CreatedAt string
 	UpdatedAt sql.NullString
 	DeletedAt sql.NullString
 }
 
 func (pr *PostRow) GetPost() *Post {
 	return &Post{
-		ID:        pr.ID.Int64,
-		Title:     pr.Title.String,
+		ID:        pr.ID,
+		Title:     pr.Title,
 		Subtitle:  pr.Subtitle.String,
-		Slug:      pr.Slug.String,
-		Content:   pr.Content.String,
+		Slug:      pr.Slug,
+		Content:   pr.Content,
 		MainImage: pr.MainImage.String,
-		CreatedAt: pr.CreatedAt.String,
+		CreatedAt: pr.CreatedAt,
 		UpdatedAt: pr.UpdatedAt.String,
 		DeletedAt: pr.DeletedAt.String,
 	}
+}
+
+func (p *Post) GetRow() PostRow {
+	postRow := PostRow{
+		ID: p.ID,
+		Title: p.Title,
+		Slug: p.Slug,
+		CreatedAt: p.CreatedAt,
+	}
+	if p.Subtitle != "" {
+		postRow.Subtitle = sql.NullString{String: p.Subtitle, Valid: true}
+	}
+	if p.MainImage != "" {
+		postRow.MainImage = sql.NullString{String: p.MainImage, Valid: true}
+	}
+	if p.UpdatedAt != "" {
+		postRow.UpdatedAt = sql.NullString{String: p.UpdatedAt, Valid: true}
+	}
+	if p.DeletedAt != "" {
+		postRow.DeletedAt = sql.NullString{String: p.DeletedAt, Valid: true}
+	}
+	return postRow
 }
 
 type User struct {

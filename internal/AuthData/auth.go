@@ -74,7 +74,7 @@ func (svc *Service) GetUserId(r *http.Request) (int64, error) {
 	if accessToken == "" {
 		return 0, errors.New("Empty access token")
 	}
-	
+
 	userClaims, err := ParseAccessToken(accessToken)
 	if err != nil {
 		return 0, err
@@ -126,4 +126,33 @@ func ParseRefreshToken(refreshToken string) (*jwt.StandardClaims, error) {
 	})
 
 	return parsedRefreshToken.Claims.(*jwt.StandardClaims), err
+}
+
+func (svc *Service) CanEditPost(r *http.Request, post_id int64) bool {
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		return false
+	}
+	user_claims, err := ParseAccessToken(accessToken)
+	if err != nil {
+		return false
+	}
+	token_author_id := user_claims.ID
+	true_author_id, err := svc.GetAuthorIdFromPostId(post_id)
+	if err != nil {
+		return false
+	}
+
+	return token_author_id == true_author_id
+}
+
+func (svc *Service) GetAuthorIdFromPostId(id int64) (int64, error) {
+	row := svc.DbConn.QueryRow(`SELECT author_id FROM post WHERE id = ?`, id)
+	var author_id int64
+	err := row.Scan(&author_id)
+	if err != nil {
+		return 0, err
+	}
+
+	return author_id, nil
 }

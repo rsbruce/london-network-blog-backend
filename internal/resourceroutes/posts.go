@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
 	"rsbruce/blogsite-api/internal/resourcedata"
+
+	"github.com/gorilla/mux"
 )
 
 func (svc *Service) GetPost(w http.ResponseWriter, r *http.Request) {
@@ -57,37 +59,81 @@ func (svc *Service) CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {
-	var post resourcedata.Post
+func (svc *Service) UpdatePost(w http.ResponseWriter, r *http.Request) {
+	var updated_post resourcedata.Post
 	decoder := json.NewDecoder(r.Body)
-
-	err := decoder.Decode(&post)
+	err := decoder.Decode(&updated_post)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	id, err := svc.AuthData.GetUserId(r)
-	if err != nil {
+	if !svc.AuthData.CanEditPost(r, updated_post.ID) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	post.AuthorID = id
-	post.UpdatedAt = time.Now().Format(time.DateTime)
-	err = svc.ResourceData.UpdatePost(post)
-
+	err = svc.ResourceData.UpdatePost(updated_post)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 }
 
-func (svc *Service) DeletePost(w http.ResponseWriter, r *http.Request) {
+func (svc *Service) ArchivePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	if !svc.AuthData.CanEditPost(r, id) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err = svc.ResourceData.ArchivePost(id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+	}
 }
 
 func (svc *Service) RestorePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
+	if !svc.AuthData.CanEditPost(r, id) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err = svc.ResourceData.RestorePost(id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func (svc *Service) DeletePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if !svc.AuthData.CanEditPost(r, id) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err = svc.ResourceData.DeletePost(id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+	}
 }

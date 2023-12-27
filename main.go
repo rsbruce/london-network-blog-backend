@@ -37,7 +37,8 @@ func setupRoutes(r *mux.Router) {
 
 	// CREATE
 	r.HandleFunc("/post", resourceRoutesService.CreatePost).Methods("POST")
-	r.HandleFunc("/upload-photo", resourceRoutesService.UploadPhoto).Methods("POST")
+	r.HandleFunc("/post/{slug}/main-image", resourceRoutesService.UploadPhoto).Methods("POST")
+	r.HandleFunc("/display-picture", resourceRoutesService.UploadPhoto).Methods("POST")
 	// READ
 	r.HandleFunc("/feed", resourceRoutesService.GetFeed).Methods("GET")
 	r.HandleFunc("/feed/{handle}", resourceRoutesService.GetSingleUserFeed).Methods("GET")

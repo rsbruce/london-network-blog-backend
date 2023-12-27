@@ -32,9 +32,13 @@ func (svc *Service) GetPost(authorHandle string, slug string) (*Post, error) {
 }
 
 func (svc *Service) CreatePost(post Post) error {
-	query := `
-		INSERT INTO post ()
-	`
+	postRow := post.GetRow()
 
-	return nil
+	_, err := svc.DbConn.Exec(`
+		INSERT INTO post 
+		(author_id, title, slug, subtitle, content, main_image, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, postRow.AuthorID, postRow.Title, postRow.Slug, postRow.Subtitle, postRow.Content, postRow.MainImage, postRow.CreatedAt)
+
+	return err
 }

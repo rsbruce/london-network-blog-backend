@@ -6,6 +6,7 @@ import (
 
 type Post struct {
 	ID        int64  `json:"id,omitempty"`
+	AuthorID        int64  `json:"author_id,omitempty"`
 	Title     string `json:"title,omitempty"`
 	Subtitle  string `json:"subtitle,omitempty"`
 	Slug      string `json:"slug,omitempty"`
@@ -18,6 +19,7 @@ type Post struct {
 
 type PostRow struct {
 	ID        int64
+	AuthorID        int64
 	Title     string
 	Subtitle  sql.NullString
 	Slug      string
@@ -45,6 +47,7 @@ func (pr *PostRow) GetPost() *Post {
 func (p *Post) GetRow() PostRow {
 	postRow := PostRow{
 		ID: p.ID,
+		AuthorID: p.AuthorID,
 		Title: p.Title,
 		Slug: p.Slug,
 		CreatedAt: p.CreatedAt,

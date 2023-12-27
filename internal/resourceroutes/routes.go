@@ -2,9 +2,11 @@ package resourceroutes
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"rsbruce/blogsite-api/internal/authdata"
 	"rsbruce/blogsite-api/internal/resourcedata"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -65,15 +67,15 @@ func (svc *Service) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post.ID = id
+	post.AuthorID = id
+	post.CreatedAt = time.Now().Format(time.DateTime)
 
-	// err = svc.ResourceData.CreatePost(post)
+	err = svc.ResourceData.CreatePost(post)
 
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// }
-
-	json.NewEncoder(w).Encode(post)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
 }
 
 func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {

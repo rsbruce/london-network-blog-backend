@@ -2,6 +2,7 @@ package resourcedata
 
 import (
 	"log"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -12,7 +13,7 @@ type Service struct {
 
 func (svc *Service) GetTextContent(slug string) (string, error) {
 	var content string
-	
+
 	row := svc.DbConn.QueryRow(`SELECT content FROM text_content WHERE slug = ?`, slug)
 	err := row.Scan(&content)
 	if err != nil {
@@ -46,4 +47,10 @@ func (svc *Service) GetUser(handle string) (*User, error) {
 	}
 
 	return userRow.GetUser(), nil
-} 
+}
+
+func (svc *Service) UpdateDisplayPicture(id int64, imagePath string) error {
+	_, err := svc.DbConn.Exec(`UPDATE user SET display_picture = ? WHERE id = ?`, os.Getenv("HOST_NAME")+"/"+imagePath, id)
+
+	return err
+}

@@ -1,6 +1,8 @@
 package authdata
 
 import (
+	"errors"
+	"net/http"
 	"os"
 	"time"
 
@@ -67,7 +69,12 @@ func (svc *Service) GenerateTokensFromId(id int64) (string, string, error) {
 	return signedAccessToken, signedRefreshToken, nil
 }
 
-func (svc *Service) GetIdFromAccessToken(accessToken string) (int64, error) {
+func (svc *Service) GetUserId(r *http.Request) (int64, error) {
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		return 0, errors.New("Empty access token")
+	}
+	
 	userClaims, err := ParseAccessToken(accessToken)
 	if err != nil {
 		return 0, err

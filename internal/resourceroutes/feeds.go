@@ -12,12 +12,6 @@ func (svc *Service) GetPersonalFeed(w http.ResponseWriter, r *http.Request) {
 	var limit int
 	var err error
 
-	accessToken := r.Header.Get("Authorization")
-	if accessToken == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
 	queryLimit := r.URL.Query().Get("limit")
 	if queryLimit != "" {
 		limit, err = strconv.Atoi(queryLimit)
@@ -27,7 +21,7 @@ func (svc *Service) GetPersonalFeed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id, err := svc.AuthData.GetIdFromAccessToken(accessToken)
+	id, err := svc.AuthData.GetUserId(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

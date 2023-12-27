@@ -54,3 +54,9 @@ func (svc *Service) UpdateDisplayPicture(id int64, imagePath string) error {
 
 	return err
 }
+
+func (svc *Service) UpdatePostImage(author_id int64, slug string, imagePath string) error {
+	_, err := svc.DbConn.Exec(`UPDATE post SET main_image = ? WHERE author_id = ? AND slug = ?`, os.Getenv("HOST_NAME")+"/"+imagePath, author_id, slug)
+
+	return err
+}

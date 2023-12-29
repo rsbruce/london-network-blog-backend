@@ -1,6 +1,7 @@
 package resourcedata
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -20,10 +21,10 @@ func (svc *Service) GetPost(authorHandle string, slug string) (*Post, error) {
 		&postRow.Title,
 		&postRow.Subtitle,
 		&postRow.Content,
-		&postRow.MainImage,
-		&postRow.CreatedAt,
-		&postRow.UpdatedAt,
-		&postRow.DeletedAt,
+		&postRow.Main_image,
+		&postRow.Created_at,
+		&postRow.Updated_at,
+		&postRow.Deleted_at,
 	)
 
 	if err != nil {
@@ -41,23 +42,23 @@ func (svc *Service) CreatePost(post Post) error {
 		INSERT INTO post 
 		(author_id, title, slug, subtitle, content, main_image, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, postRow.AuthorID, postRow.Title, postRow.Slug, postRow.Subtitle, postRow.Content, postRow.MainImage, postRow.CreatedAt)
+	`, postRow.Author_id, postRow.Title, postRow.Slug, postRow.Subtitle, postRow.Content, postRow.Main_image, postRow.Created_at)
 
 	return err
 }
 
-func (svc *Service) UpdatePost(post Post) error {
+func (svc *Service) UpdatePost(post Post, oldSlug string) error {
 	postRow := post.GetRow()
 
 	rows, err := svc.DbConn.NamedQuery(
-		`UPDATE post SET
+		fmt.Sprintf(`UPDATE post SET
 		slug = :slug,
 		title = :title,
 		subtitle = :subtitle,
 		content = :content,
 		main_image = :main_image,
 		updated_at = :updated_at
-		WHERE id = :id`,
+		WHERE author_id = :author_id AND slug = "%s"`, oldSlug),
 		postRow,
 	)
 

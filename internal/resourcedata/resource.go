@@ -35,11 +35,11 @@ func (svc *Service) GetUser(handle string) (*User, error) {
 	`, handle)
 
 	err := row.Scan(
-		&userRow.DisplayName,
-		&userRow.DisplayPicture,
+		&userRow.Display_name,
+		&userRow.Display_picture,
 		&userRow.Blurb,
-		&userRow.UserRole,
-		&userRow.CreatedAt,
+		&userRow.User_role,
+		&userRow.Created_at,
 	)
 
 	if err != nil {
@@ -70,13 +70,13 @@ func (svc *Service) EditUser(user User) error {
 		columns = append(columns, "blurb")
 		values = append(values, user.Blurb)
 	}
-	if user.DisplayName != "" {
+	if user.Display_name != "" {
 		columns = append(columns, "display_name")
 		values = append(values, user.Blurb)
 	}
-	if user.DisplayPicture != "" {
+	if user.Display_picture != "" {
 		columns = append(columns, "display_picture")
-		values = append(values, user.DisplayPicture)
+		values = append(values, user.Display_picture)
 	}
 	values = append(values, user.ID)
 

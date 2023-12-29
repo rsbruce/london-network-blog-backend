@@ -30,10 +30,10 @@ func (svc *Service) GetFeed(limit int) ([]FeedItem, error) {
 		rows.Scan(
 			&postRow.Title,
 			&postRow.Subtitle,
-			&postRow.CreatedAt,
-			&postRow.UpdatedAt,
-			&userRow.DisplayName,
-			&userRow.DisplayPicture,
+			&postRow.Created_at,
+			&postRow.Updated_at,
+			&userRow.Display_name,
+			&userRow.Display_picture,
 			&userRow.Handle,
 		)
 		feed = append(feed, FeedItem{Post: *postRow.GetPost(), User: *userRow.GetUser()})
@@ -65,7 +65,7 @@ func (svc *Service) GetPersonalFeed(userId int64, limit int) ([]Post, error) {
 
 	for rows.Next() {
 		var postRow PostRow
-		err = rows.Scan(&postRow.Title, &postRow.Subtitle, &postRow.CreatedAt, &postRow.UpdatedAt, &postRow.DeletedAt)
+		err = rows.Scan(&postRow.Title, &postRow.Subtitle, &postRow.Created_at, &postRow.Updated_at, &postRow.Deleted_at)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -102,7 +102,7 @@ func (svc *Service) GetSingleUserFeed(handle string, limit int) ([]Post, error) 
 
 	for rows.Next() {
 		var postRow PostRow
-		err = rows.Scan(&postRow.Title, &postRow.Subtitle, &postRow.CreatedAt, &postRow.UpdatedAt)
+		err = rows.Scan(&postRow.Title, &postRow.Subtitle, &postRow.Created_at, &postRow.Updated_at)
 		if err != nil {
 			log.Println(err)
 			return nil, err

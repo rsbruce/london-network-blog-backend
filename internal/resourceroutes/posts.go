@@ -47,8 +47,8 @@ func (svc *Service) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post.AuthorID = id
-	post.CreatedAt = time.Now().Format(time.DateTime)
+	post.Author_id = id
+	post.Created_at = time.Now().Format(time.DateTime)
 
 	err = svc.ResourceData.CreatePost(post)
 
@@ -59,22 +59,27 @@ func (svc *Service) CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {
-	var updated_post resourcedata.Post
+	var updatedPost resourcedata.Post
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&updated_post)
+	err := decoder.Decode(&updatedPost)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if !svc.AuthData.CanEditPost(r, updated_post.ID) {
+	userId, err := svc.AuthData.GetUserId(r)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	updatedPost.Author_id = userId
 
-	err = svc.ResourceData.UpdatePost(updated_post)
+	params := mux.Vars(r)
+	oldSlug := params["slug"]
+
+	err = svc.ResourceData.UpdatePost(updatedPost, oldSlug)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 

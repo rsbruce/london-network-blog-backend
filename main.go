@@ -32,7 +32,7 @@ func setupRoutes(r *mux.Router) {
 
 	r.HandleFunc("/login", authRoutesService.Login).Methods("POST")
 	r.HandleFunc("/user-handle", authRoutesService.UserHandle).Methods("GET")
-	r.HandleFunc("/refresh-access", authRoutesService.RefreshAccess).Methods("GET")
+	r.HandleFunc("/refresh-access", authRoutesService.RefreshAccess).Methods("POST")
 	r.HandleFunc("/reset-password", authRoutesService.ResetPassword).Methods("POST")
 
 	// CREATE

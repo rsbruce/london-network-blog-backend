@@ -1,6 +1,7 @@
 package authdata
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -44,24 +45,12 @@ func (svc *Service) CheckPassword(creds LoginCredentials) (int64, error) {
 }
 
 func (svc *Service) GenerateTokensFromId(id int64) (string, string, error) {
-	userClaims := UserClaims{
-		ID: id,
-		StandardClaims: jwt.StandardClaims{
-			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(time.Minute * 120).Unix(),
-		},
-	}
-	signedAccessToken, err := NewAccessToken(userClaims)
+	signedAccessToken, err := NewAccessToken(id)
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshClaims := jwt.StandardClaims{
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(time.Hour * 48).Unix(),
-	}
-
-	signedRefreshToken, err := NewRefreshToken(refreshClaims)
+	signedRefreshToken, err := NewRefreshToken()
 	if err != nil {
 		return "", "", err
 	}
@@ -100,15 +89,26 @@ func (svc *Service) GetHandleFromAccessToken(accessToken string) (string, error)
 	return handle, nil
 }
 
-func NewAccessToken(claims UserClaims) (string, error) {
+func NewAccessToken(id int64) (string, error) {
+	claims := UserClaims{
+		ID: id,
+		StandardClaims: jwt.StandardClaims{
+			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: time.Now().Add(time.Second * 20).Unix(),
+		},
+	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	return accessToken.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 }
 
-func NewRefreshToken(claims jwt.StandardClaims) (string, error) {
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+func NewRefreshToken() (string, error) {
+	claims := jwt.StandardClaims{
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Add(time.Hour * 48).Unix(),
+	}
 
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return refreshToken.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 }
 
@@ -120,39 +120,42 @@ func ParseAccessToken(accessToken string) (*UserClaims, error) {
 	return parsedAccessToken.Claims.(*UserClaims), err
 }
 
-func ParseRefreshToken(refreshToken string) (*jwt.StandardClaims, error) {
+func RefreshTokenIsValid(refreshToken string) bool {
 	parsedRefreshToken, err := jwt.ParseWithClaims(refreshToken, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 
-	return parsedRefreshToken.Claims.(*jwt.StandardClaims), err
+	return (err == nil) && (parsedRefreshToken.Claims.(*jwt.StandardClaims).Valid() == nil)
 }
 
-func (svc *Service) CanEditPost(r *http.Request, post_id int64) bool {
+func (svc *Service) GenerateTokensFromRefresh(r *http.Request) (string, string, error) {
 	accessToken := r.Header.Get("Authorization")
 	if accessToken == "" {
-		return false
-	}
-	user_claims, err := ParseAccessToken(accessToken)
-	if err != nil {
-		return false
-	}
-	token_author_id := user_claims.ID
-	true_author_id, err := svc.GetAuthorIdFromPostId(post_id)
-	if err != nil {
-		return false
+		return "", "", errors.New("Empty access token")
 	}
 
-	return token_author_id == true_author_id
-}
-
-func (svc *Service) GetAuthorIdFromPostId(id int64) (int64, error) {
-	row := svc.DbConn.QueryRow(`SELECT author_id FROM post WHERE id = ?`, id)
-	var author_id int64
-	err := row.Scan(&author_id)
+	decoder := json.NewDecoder(r.Body)
+	var refresh struct {
+		Token string `json:"token"`
+	}
+	err := decoder.Decode(&refresh)
 	if err != nil {
-		return 0, err
+		return "", "", errors.New("No refresh token found in refresh body")
 	}
 
-	return author_id, nil
+	if !RefreshTokenIsValid(refresh.Token) {
+		return "", "", errors.New("Invalid refresh token")
+	}
+
+	accessClaims, _ := ParseAccessToken(accessToken)
+	if accessClaims == nil {
+		return "", "", errors.New("Invalid access token claims")
+	}
+
+	newRefreshToken, err := NewRefreshToken()
+	newAccessToken, err := NewAccessToken(accessClaims.ID)
+	if err != nil {
+		return "", "", err
+	}
+	return newAccessToken, newRefreshToken, nil
 }

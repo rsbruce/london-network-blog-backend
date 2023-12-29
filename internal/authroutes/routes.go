@@ -59,18 +59,32 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var auth_response struct {
+	var authResponse struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 	}
-	auth_response.AccessToken = accessToken
-	auth_response.RefreshToken = refreshToken
+	authResponse.AccessToken = accessToken
+	authResponse.RefreshToken = refreshToken
 
-	json.NewEncoder(w).Encode(auth_response)
+	json.NewEncoder(w).Encode(authResponse)
 }
 
 func (svc *Service) RefreshAccess(w http.ResponseWriter, r *http.Request) {
+	accessToken, refreshToken, err := svc.AuthData.GenerateTokensFromRefresh(r)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
+	var authResponse struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+	}
+	authResponse.AccessToken = accessToken
+	authResponse.RefreshToken = refreshToken
+
+	json.NewEncoder(w).Encode(authResponse)
 }
 
 func (svc *Service) ResetPassword(w http.ResponseWriter, r *http.Request) {

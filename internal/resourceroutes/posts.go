@@ -73,12 +73,14 @@ func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updatedPost.Author_id = userId
+	updatedPost.Updated_at = time.Now().Format(time.DateTime)
 
 	params := mux.Vars(r)
 	oldSlug := params["slug"]
 
 	err = svc.ResourceData.UpdatePost(updatedPost, oldSlug)
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}

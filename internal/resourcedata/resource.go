@@ -3,6 +3,7 @@ package resourcedata
 import (
 	"log"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -91,4 +92,39 @@ func (svc *Service) EditUser(user User) error {
 
 	return nil
 
+}
+
+func getFieldsToUpdate(obj interface{}, exclude []string) []string {
+	v := reflect.ValueOf(obj)
+	val := reflect.Indirect(v)
+	num_fields := v.NumField()
+
+	var names []string
+	var name string
+	var field reflect.Value
+
+	for i := 0; i < num_fields; i++ {
+		field = v.Field(i)
+		if (field.Type().String() == "string" && field.String() != "") ||
+			(field.Type().String() == "int64" && field.Int() != 0) {
+			name = strings.ToLower(val.Type().Field(i).Name)
+			names = append(names, name)
+		}
+	}
+
+	return unqiueStrings(names, exclude)
+}
+
+func unqiueStrings(a, b []string) []string {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+	var diff []string
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
 }

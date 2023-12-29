@@ -3,6 +3,7 @@ package resourcedata
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -48,20 +49,17 @@ func (svc *Service) CreatePost(post Post) error {
 }
 
 func (svc *Service) UpdatePost(post Post, oldSlug string) error {
-	postRow := post.GetRow()
+	fields := getFieldsToUpdate(post, []string{"id", "author_id", "created_at", "deleted_at"})
+	assignments := make([]string, len(fields))
+	for i, field := range fields {
+		assignments[i] = fmt.Sprintf("%s = :%s", field, field)
+	}
 
-	rows, err := svc.DbConn.NamedQuery(
-		fmt.Sprintf(`UPDATE post SET
-		slug = :slug,
-		title = :title,
-		subtitle = :subtitle,
-		content = :content,
-		main_image = :main_image,
-		updated_at = :updated_at
-		WHERE author_id = :author_id AND slug = "%s"`, oldSlug),
-		postRow,
-	)
+	query := `UPDATE post SET ` +
+		strings.Join(assignments, ", ") +
+		fmt.Sprintf(` WHERE author_id = :author_id AND slug = "%s"`, oldSlug)
 
+	rows, err := svc.DbConn.NamedQuery(query, post)
 	if err != nil {
 		return err
 	}

@@ -71,19 +71,19 @@ func (svc *Service) UpdatePost(post Post) error {
 	return nil
 }
 
-func (svc *Service) ArchivePost(id int64) error {
+func (svc *Service) ArchivePost(authorID int64, slug string) error {
 	_, err := svc.DbConn.Exec(`UPDATE post
 		SET deleted_at = ?
-		WHERE id = ?`,
-		time.Now().Format(time.DateTime), id)
+		WHERE author_id = ? AND slug = ?`,
+		time.Now().Format(time.DateTime), authorID, slug)
 
 	return err
 }
 
-func (svc *Service) RestorePost(id int64) error {
+func (svc *Service) RestorePost(authorID int64, slug string) error {
 	_, err := svc.DbConn.Exec(`UPDATE post
 		SET deleted_at = NULL
-		WHERE id = ?`, id)
+		WHERE author_id = ? AND slug = ?`, authorID, slug)
 
 	return err
 }

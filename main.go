@@ -49,6 +49,7 @@ func setupRoutes(r *mux.Router) {
 	// UPDATE
 	r.HandleFunc("/post/{slug}", resourceRoutesService.EditPost).Methods("PUT")
 	r.HandleFunc("/post/restore/{slug}", resourceRoutesService.RestorePost).Methods("PUT")
+	r.HandleFunc("/post/archive/{slug}", resourceRoutesService.ArchivePost).Methods("PUT")
 	r.HandleFunc("/user", resourceRoutesService.EditUser).Methods("PUT")
 	// DELETE
 	r.HandleFunc("/post/{slug}", resourceRoutesService.DeletePost).Methods("DELETE")

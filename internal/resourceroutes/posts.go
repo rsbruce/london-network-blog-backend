@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"rsbruce/blogsite-api/internal/resourcedata"
@@ -83,18 +82,15 @@ func (svc *Service) EditPost(w http.ResponseWriter, r *http.Request) {
 
 func (svc *Service) ArchivePost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	slug := params["slug"]
 
-	if !svc.AuthData.CanEditPost(r, id) {
+	userId, err := svc.AuthData.GetUserId(r)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	err = svc.ResourceData.ArchivePost(id)
+	err = svc.ResourceData.ArchivePost(userId, slug)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -102,18 +98,15 @@ func (svc *Service) ArchivePost(w http.ResponseWriter, r *http.Request) {
 
 func (svc *Service) RestorePost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	slug := params["slug"]
 
-	if !svc.AuthData.CanEditPost(r, id) {
+	userId, err := svc.AuthData.GetUserId(r)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	err = svc.ResourceData.RestorePost(id)
+	err = svc.ResourceData.RestorePost(userId, slug)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}

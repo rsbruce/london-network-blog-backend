@@ -1,6 +1,7 @@
 package resourcedata
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -63,35 +64,25 @@ func (svc *Service) UpdatePostImage(author_id int64, slug string, imagePath stri
 	return err
 }
 func (svc *Service) EditUser(user User) error {
-	var (
-		columns []string
-		values  []interface{}
-	)
-	if user.Blurb != "" {
-		columns = append(columns, "blurb")
-		values = append(values, user.Blurb)
+	fields := getFieldsToUpdate(user, []string{"id", "created_at", "password", "user_role"})
+	assignments := make([]string, len(fields))
+	for i, field := range fields {
+		assignments[i] = fmt.Sprintf("%s = :%s", field, field)
 	}
-	if user.Display_name != "" {
-		columns = append(columns, "display_name")
-		values = append(values, user.Blurb)
+
+	query := `UPDATE user SET ` +
+		strings.Join(assignments, ", ") +
+		` WHERE id = :id`
+
+	rows, err := svc.DbConn.NamedQuery(query, user)
+	if err != nil {
+		return err
 	}
-	if user.Display_picture != "" {
-		columns = append(columns, "display_picture")
-		values = append(values, user.Display_picture)
-	}
-	values = append(values, user.ID)
-
-	if len(columns) > 0 {
-		query := `
-			UPDATE user SET ` + strings.Join(columns, " = ?, ") + ` = ?  WHERE id = ?`
-
-		_, err := svc.DbConn.Exec(query, values...)
-
+	if err := rows.Close(); err != nil {
 		return err
 	}
 
 	return nil
-
 }
 
 func getFieldsToUpdate(obj interface{}, exclude []string) []string {

@@ -71,6 +71,7 @@ type User struct {
 	ID              int64  `json:"id,omitempty"`
 	Display_name    string `json:"display_name,omitempty"`
 	Display_picture string `json:"display_picture,omitempty"`
+	Email           string `json:"email,omitempty"`
 	Handle          string `json:"handle,omitempty"`
 	Blurb           string `json:"blurb,omitempty"`
 	User_role       string `json:"user_role,omitempty"`

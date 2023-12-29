@@ -88,8 +88,8 @@ func (svc *Service) RestorePost(id int64) error {
 	return err
 }
 
-func (svc *Service) DeletePost(id int64) error {
-	_, err := svc.DbConn.Exec(`DELETE FROM post WHERE id = ?`, id)
+func (svc *Service) DeletePost(authorID int64, slug string) error {
+	_, err := svc.DbConn.Exec(`DELETE FROM post WHERE author_id = ? AND slug = ?`, authorID, slug)
 
 	return err
 }

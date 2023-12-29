@@ -121,18 +121,15 @@ func (svc *Service) RestorePost(w http.ResponseWriter, r *http.Request) {
 
 func (svc *Service) DeletePost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	slug := params["slug"]
 
-	if !svc.AuthData.CanEditPost(r, id) {
+	userId, err := svc.AuthData.GetUserId(r)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	err = svc.ResourceData.DeletePost(id)
+	err = svc.ResourceData.DeletePost(userId, slug)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}

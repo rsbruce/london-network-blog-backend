@@ -75,7 +75,7 @@ func setupRoutes(r *mux.Router) {
 	// DELETE
 	r.HandleFunc("/post/{slug}", resourceRoutesService.DeletePost).Methods("DELETE")
 
-	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}).Methods("OPTIONS")
 
 }
 

@@ -25,34 +25,61 @@ var authRoutesService *authroutes.Service
 var resourceDataService *resourcedata.Service
 var resourceRoutesService *resourceroutes.Service
 
+func CorsMiddleWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func JSONMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func setupRoutes(r *mux.Router) {
 
+	r.Use(CorsMiddleWare)
+
+	// PRE FLIGHT REQUESTS
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {}).Methods("OPTIONS")
+
+	// STATIC FILES
+	staticFileSubrouter := r.PathPrefix("/static").Subrouter()
 	fs := http.FileServer(http.Dir("./static"))
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+	staticFileSubrouter.NewRoute().Handler(http.StripPrefix("/static/", fs))
 
-	r.HandleFunc("/login", authRoutesService.Login).Methods("POST")
-	r.HandleFunc("/user-handle", authRoutesService.UserHandle).Methods("GET")
-	r.HandleFunc("/refresh-access", authRoutesService.RefreshAccess).Methods("POST")
-	r.HandleFunc("/reset-password", authRoutesService.ResetPassword).Methods("POST")
+	// AUTH
+	authSubrouter := r.NewRoute().Subrouter()
+	authSubrouter.Use(JSONMiddleware)
+	authSubrouter.HandleFunc("/login", authRoutesService.Login).Methods("POST")
+	authSubrouter.HandleFunc("/user-handle", authRoutesService.UserHandle).Methods("GET")
+	authSubrouter.HandleFunc("/refresh-access", authRoutesService.RefreshAccess).Methods("POST")
+	authSubrouter.HandleFunc("/reset-password", authRoutesService.ResetPassword).Methods("POST")
 
+	// RESOURCES
+	resourceSubrouter := r.NewRoute().Subrouter()
+	resourceSubrouter.Use(JSONMiddleware)
 	// CREATE
-	r.HandleFunc("/post", resourceRoutesService.CreatePost).Methods("POST")
-	r.HandleFunc("/post/{slug}/main-image", resourceRoutesService.UpdatePostImage).Methods("POST")
-	r.HandleFunc("/display-picture", resourceRoutesService.UpdateDisplayPicture).Methods("POST")
+	resourceSubrouter.HandleFunc("/post", resourceRoutesService.CreatePost).Methods("POST")
+	resourceSubrouter.HandleFunc("/post/{slug}/main-image", resourceRoutesService.UpdatePostImage).Methods("POST")
+	resourceSubrouter.HandleFunc("/display-picture", resourceRoutesService.UpdateDisplayPicture).Methods("POST")
 	// READ
-	r.HandleFunc("/feed", resourceRoutesService.GetFeed).Methods("GET")
-	r.HandleFunc("/feed/{handle}", resourceRoutesService.GetSingleUserFeed).Methods("GET")
-	r.HandleFunc("/personal-feed", resourceRoutesService.GetPersonalFeed).Methods("GET")
-	r.HandleFunc("/post/{handle}/{slug}", resourceRoutesService.GetPost).Methods("GET")
-	r.HandleFunc("/text-content/{slug}", resourceRoutesService.GetTextContent).Methods("GET")
-	r.HandleFunc("/user/{handle}", resourceRoutesService.GetUser).Methods("GET")
+	resourceSubrouter.HandleFunc("/feed", resourceRoutesService.GetFeed).Methods("GET")
+	resourceSubrouter.HandleFunc("/feed/{handle}", resourceRoutesService.GetSingleUserFeed).Methods("GET")
+	resourceSubrouter.HandleFunc("/personal-feed", resourceRoutesService.GetPersonalFeed).Methods("GET")
+	resourceSubrouter.HandleFunc("/post/{handle}/{slug}", resourceRoutesService.GetPost).Methods("GET")
+	resourceSubrouter.HandleFunc("/text-content/{slug}", resourceRoutesService.GetTextContent).Methods("GET")
+	resourceSubrouter.HandleFunc("/user/{handle}", resourceRoutesService.GetUser).Methods("GET")
 	// UPDATE
-	r.HandleFunc("/post/{slug}", resourceRoutesService.EditPost).Methods("PUT")
-	r.HandleFunc("/post/restore/{slug}", resourceRoutesService.RestorePost).Methods("PUT")
-	r.HandleFunc("/post/archive/{slug}", resourceRoutesService.ArchivePost).Methods("PUT")
-	r.HandleFunc("/user", resourceRoutesService.EditUser).Methods("PUT")
+	resourceSubrouter.HandleFunc("/post/{slug}", resourceRoutesService.EditPost).Methods("PUT")
+	resourceSubrouter.HandleFunc("/post/restore/{slug}", resourceRoutesService.RestorePost).Methods("PUT")
+	resourceSubrouter.HandleFunc("/post/archive/{slug}", resourceRoutesService.ArchivePost).Methods("PUT")
+	resourceSubrouter.HandleFunc("/user", resourceRoutesService.EditUser).Methods("PUT")
 	// DELETE
-	r.HandleFunc("/post/{slug}", resourceRoutesService.DeletePost).Methods("DELETE")
+	resourceSubrouter.HandleFunc("/post/{slug}", resourceRoutesService.DeletePost).Methods("DELETE")
 
 }
 

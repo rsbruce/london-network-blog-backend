@@ -1,6 +1,8 @@
 package resourcedata
 
-import "log"
+import (
+	"log"
+)
 
 func (svc *Service) GetFeed(limit int) ([]FeedItem, error) {
 	var feed []FeedItem
@@ -10,7 +12,7 @@ func (svc *Service) GetFeed(limit int) ([]FeedItem, error) {
 	}
 
 	query := `
-		SELECT post.id post.title, post.subtitle, post.created_at, post.updated_at, user.display_name, user.display_picture, user.handle
+		SELECT post.id, post.title, post.subtitle, post.created_at, post.updated_at, user.display_name, user.display_picture, user.handle
 		FROM post
 		JOIN user ON post.author_id = user.id
 		WHERE post.deleted_at IS NULL
@@ -28,6 +30,7 @@ func (svc *Service) GetFeed(limit int) ([]FeedItem, error) {
 		var postRow PostRow
 		var userRow UserRow
 		rows.Scan(
+			&postRow.ID,
 			&postRow.Title,
 			&postRow.Subtitle,
 			&postRow.Created_at,
@@ -50,7 +53,7 @@ func (svc *Service) GetPersonalFeed(userId int64, limit int) ([]Post, error) {
 	var feed []Post
 
 	rows, err := svc.DbConn.Query(`
-		SELECT id title, subtitle, created_at, updated_at, deleted_at
+		SELECT id, title, subtitle, created_at, updated_at, deleted_at
 		FROM post
 		WHERE deleted_at IS NULL AND author_id = ?
 		LIMIT ?
@@ -65,7 +68,7 @@ func (svc *Service) GetPersonalFeed(userId int64, limit int) ([]Post, error) {
 
 	for rows.Next() {
 		var postRow PostRow
-		err = rows.Scan(&postRow.Title, &postRow.Subtitle, &postRow.Created_at, &postRow.Updated_at, &postRow.Deleted_at)
+		err = rows.Scan(&postRow.ID, &postRow.Title, &postRow.Subtitle, &postRow.Created_at, &postRow.Updated_at, &postRow.Deleted_at)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -102,7 +105,7 @@ func (svc *Service) GetSingleUserFeed(handle string, limit int) ([]Post, error) 
 
 	for rows.Next() {
 		var postRow PostRow
-		err = rows.Scan(&postRow.Title, &postRow.Subtitle, &postRow.Created_at, &postRow.Updated_at)
+		err = rows.Scan(&postRow.ID, &postRow.Title, &postRow.Subtitle, &postRow.Created_at, &postRow.Updated_at)
 		if err != nil {
 			log.Println(err)
 			return nil, err

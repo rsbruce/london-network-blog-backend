@@ -31,12 +31,13 @@ func (svc *Service) GetUser(handle string) (*User, error) {
 	var userRow UserRow
 
 	row := svc.DbConn.QueryRow(`
-		SELECT display_name, display_picture, blurb, user_role, created_at
+		SELECT handle, display_name, display_picture, blurb, user_role, created_at
 		FROM user
 		WHERE handle = ?
 	`, handle)
 
 	err := row.Scan(
+		&userRow.Handle,
 		&userRow.Display_name,
 		&userRow.Display_picture,
 		&userRow.Blurb,

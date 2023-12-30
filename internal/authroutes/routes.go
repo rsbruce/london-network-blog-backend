@@ -44,7 +44,8 @@ func (svc *Service) Login(w http.ResponseWriter, r *http.Request) {
 	id, err := svc.AuthData.CheckPassword(credentials)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode("Could not authenticate")
 		return
 	}

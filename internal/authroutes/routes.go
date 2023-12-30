@@ -14,19 +14,16 @@ type Service struct {
 
 func (svc *Service) UserHandle(w http.ResponseWriter, r *http.Request) {
 	var authResponse struct {
-		Message string `json:"message"`
-		Handle  string `json:"handle"`
+		Handle string `json:"handle"`
 	}
 
 	accessToken := r.Header.Get("Authorization")
 	handle, err := svc.AuthData.GetHandleFromAccessToken(accessToken)
 
 	if err != nil {
-		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
-		authResponse.Message = "Failed"
+		return
 	} else {
-		authResponse.Message = "Success"
 		authResponse.Handle = handle
 	}
 

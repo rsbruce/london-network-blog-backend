@@ -24,7 +24,11 @@ func (svc *Service) GetTextContent(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 
-	json.NewEncoder(w).Encode(content)
+	var text struct {
+		Content string `json:"content"`
+	}
+	text.Content = content
+	json.NewEncoder(w).Encode(text)
 
 }
 

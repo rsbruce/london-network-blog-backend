@@ -113,6 +113,10 @@ func NewRefreshToken() (string, error) {
 }
 
 func ParseAccessToken(accessToken string) (*UserClaims, error) {
+	if accessToken == "" {
+		return nil, errors.New("Empty access token")
+	}
+
 	parsedAccessToken, err := jwt.ParseWithClaims(accessToken, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})

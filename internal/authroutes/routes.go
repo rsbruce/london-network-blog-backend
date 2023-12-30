@@ -21,7 +21,8 @@ func (svc *Service) UserHandle(w http.ResponseWriter, r *http.Request) {
 	handle, err := svc.AuthData.GetHandleFromAccessToken(accessToken)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		log.Println(err)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	} else {
 		authResponse.Handle = handle

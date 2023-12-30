@@ -94,7 +94,7 @@ func NewAccessToken(id int64) (string, error) {
 		ID: id,
 		StandardClaims: jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(time.Second * 20).Unix(),
+			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -158,4 +158,22 @@ func (svc *Service) GenerateTokensFromRefresh(r *http.Request) (string, string, 
 		return "", "", err
 	}
 	return newAccessToken, newRefreshToken, nil
+}
+
+func (svc *Service) UpdatePassword(userID int64, newPassword string) error {
+
+	password := []byte(newPassword)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, password)
+	if err != nil {
+		return err
+	}
+
+	_, err = svc.DbConn.Exec(`UPDATE user SET password = ? WHERE id = ?`, hashedPassword, userID)
+
+	return err
 }

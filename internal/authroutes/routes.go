@@ -88,5 +88,23 @@ func (svc *Service) RefreshAccess(w http.ResponseWriter, r *http.Request) {
 }
 
 func (svc *Service) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
 
+	var creds authdata.LoginCredentials
+	err := decoder.Decode(&creds)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	id, err := svc.AuthData.GetUserId(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	err = svc.AuthData.UpdatePassword(id, creds.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }

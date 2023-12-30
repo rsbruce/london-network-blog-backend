@@ -11,7 +11,7 @@ func (svc *Service) GetPost(authorHandle string, slug string) (*Post, error) {
 	var postRow PostRow
 
 	err := svc.DbConn.QueryRow(`
-		SELECT post.id, post.title, post.subtitle, post.content, post.main_image, post.created_at, post.updated_at, post.deleted_at 
+		SELECT post.id, post.title, post.subtitle, post.slug, post.content, post.main_image, post.created_at, post.updated_at, post.deleted_at 
 		FROM post
 		JOIN user
 		WHERE user.handle = ?
@@ -21,6 +21,7 @@ func (svc *Service) GetPost(authorHandle string, slug string) (*Post, error) {
 		&postRow.ID,
 		&postRow.Title,
 		&postRow.Subtitle,
+		&postRow.Slug,
 		&postRow.Content,
 		&postRow.Main_image,
 		&postRow.Created_at,

@@ -56,7 +56,7 @@ func (svc *Service) GetPersonalFeed(userId int64, limit int) ([]Post, error) {
 	rows, err := svc.DbConn.Query(`
 		SELECT id, title, subtitle, slug, created_at, updated_at, deleted_at
 		FROM post
-		WHERE deleted_at IS NULL AND author_id = ?
+		WHERE author_id = ?
 		LIMIT ?
 	`, userId, limit)
 

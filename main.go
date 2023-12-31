@@ -7,58 +7,100 @@ import (
 
 	"net/http"
 
-	"rsbruce/blogsite-api/internal/auth"
-	"rsbruce/blogsite-api/internal/database"
-	"rsbruce/blogsite-api/internal/transport"
+	"rsbruce/blogsite-api/internal/authdata"
+	"rsbruce/blogsite-api/internal/authroutes"
+	"rsbruce/blogsite-api/internal/resourcedata"
+	"rsbruce/blogsite-api/internal/resourceroutes"
 
+	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 )
 
-func cors(fs http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+var authDataService *authdata.Service
+var authRoutesService *authroutes.Service
+var resourceDataService *resourcedata.Service
+var resourceRoutesService *resourceroutes.Service
+
+func CorsMiddleWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Access-Control-Allow-Origin", "*")
 		w.Header().Add("Access-Control-Allow-Headers", "*")
 		w.Header().Add("Access-Control-Allow-Methods", "*")
-		fs.ServeHTTP(w, r)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-func setupRoutes(r *mux.Router, db *database.Database) {
+func JSONMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
 
-	handler := transport.NewHttpHandler(db)
-	authHandler := auth.NewAuthHandler(db)
-	userAuth := authHandler.CanAccessUser
-	postAuth := authHandler.CanAccessPost
+func setupRoutes(r *mux.Router) {
 
+	r.Use(CorsMiddleWare, JSONMiddleware)
+
+	// STATIC FILES
+	staticFileSubrouter := r.PathPrefix("/static").Subrouter()
 	fs := http.FileServer(http.Dir("./static"))
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+	staticFileSubrouter.NewRoute().Handler(http.StripPrefix("/static/", fs))
 
-	r.PathPrefix("/").HandlerFunc(handler.HandleCors).Methods("OPTIONS")
+	// AUTH
+	r.HandleFunc("/login", authRoutesService.Login).Methods("POST")
+	r.HandleFunc("/user-handle", authRoutesService.UserHandle).Methods("GET")
+	r.HandleFunc("/refresh-access", authRoutesService.RefreshAccess).Methods("POST")
+	r.HandleFunc("/reset-password", authRoutesService.ResetPassword).Methods("POST")
 
-	api := r.PathPrefix("/api").Subrouter()
+	// CREATE
+	r.HandleFunc("/post", resourceRoutesService.CreatePost).Methods("POST")
+	r.HandleFunc("/post/{slug}/main-image", resourceRoutesService.UpdatePostImage).Methods("POST")
+	r.HandleFunc("/display-picture", resourceRoutesService.UpdateDisplayPicture).Methods("POST")
+	// READ
+	r.HandleFunc("/feed", resourceRoutesService.GetFeed).Methods("GET")
+	r.HandleFunc("/feed/{handle}", resourceRoutesService.GetSingleUserFeed).Methods("GET")
+	r.HandleFunc("/personal-feed", resourceRoutesService.GetPersonalFeed).Methods("GET")
+	r.HandleFunc("/post/{handle}/{slug}", resourceRoutesService.GetPost).Methods("GET")
+	r.HandleFunc("/text-content/{slug}", resourceRoutesService.GetTextContent).Methods("GET")
+	r.HandleFunc("/user/{handle}", resourceRoutesService.GetUser).Methods("GET")
+	// UPDATE
+	r.HandleFunc("/post/{slug}", resourceRoutesService.EditPost).Methods("PUT")
+	r.HandleFunc("/post/restore/{slug}", resourceRoutesService.RestorePost).Methods("PUT")
+	r.HandleFunc("/post/archive/{slug}", resourceRoutesService.ArchivePost).Methods("PUT")
+	r.HandleFunc("/user", resourceRoutesService.EditUser).Methods("PUT")
+	// DELETE
+	r.HandleFunc("/post/{slug}", resourceRoutesService.DeletePost).Methods("DELETE")
 
-	api.HandleFunc("/text-content/{slug}", handler.GetTextContent).Methods("GET")
-	api.HandleFunc("/latest-posts/{handle}", handler.GetLatestForAuthor).Methods("GET")
-	api.HandleFunc("/latest-posts", handler.GetLatestAllAuthors).Methods("GET")
-	api.HandleFunc("/user/{handle}", handler.GetUserProfile).Methods("GET")
-	api.HandleFunc("/login", authHandler.Login).Methods("POST")
-	api.HandleFunc("/checkAuth/{id}", authHandler.CheckAuth)
-	api.HandleFunc("/post/{slug}", handler.GetPostPage).Methods("GET")
-	api.HandleFunc("/slugs/{handle}", handler.GetSlugsForUser).Methods("GET")
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}).Methods("OPTIONS")
 
-	// AUTH ROUTES
-	api.HandleFunc("/user/{handle}", userAuth(handler.UpdateUserProfile)).Methods("PUT")
-	api.HandleFunc("/new-password", userAuth(handler.UpdatePassword)).Methods("PUT")
-	api.HandleFunc("/profile-picture/{id}", handler.UploadProfilePicture).Methods("POST")
+}
 
-	api.HandleFunc("/new-post", postAuth(handler.NewPost)).Methods("POST")
-	api.HandleFunc("/post/{id}", postAuth(handler.UpdatePost)).Methods("PUT")
-	api.HandleFunc("/post/{id}", postAuth(handler.DeletePost)).Methods("DELETE")
-	api.HandleFunc("/post/archive/{id}", postAuth(handler.ArchivePost)).Methods("PUT")
-	api.HandleFunc("/post/restore/{id}", postAuth(handler.RestorePost)).Methods("PUT")
+func NewDbConnection() (*sqlx.DB, error) {
+	log.Println("Setting up new database connection")
 
+	cfg := mysql.Config{
+		User:   os.Getenv("DB_USER"),
+		Passwd: os.Getenv("DB_PASS"),
+		Net:    "tcp",
+		Addr:   os.Getenv("DB_HOST"),
+		DBName: os.Getenv("DB_NAME"),
+	}
+
+	db, err := sqlx.Connect("mysql", cfg.FormatDSN())
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to database: %w", err)
+	}
+
+	pingErr := db.Ping()
+	if pingErr != nil {
+		return nil, fmt.Errorf("could not connect to database: %w", err)
+	}
+
+	return db, nil
 }
 
 func main() {
@@ -71,29 +113,33 @@ func main() {
 
 	log.Println("App started")
 
+	defer func() {
+		file.Close()
+	}()
+
 	err = godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	defer func() {
-		file.Close()
-	}()
-
-	db, err := database.NewDatabase()
+	authDb, err := NewDbConnection()
+	resourceDb, err := NewDbConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pingErr := db.Client.Ping()
-	if pingErr != nil {
-		log.Fatal(pingErr)
-	}
 	fmt.Println("Connected!")
 
-	r := mux.NewRouter()
+	authDataService = &authdata.Service{DbConn: authDb}
+	resourceDataService = &resourcedata.Service{DbConn: resourceDb}
 
-	setupRoutes(r, db)
+	authRoutesService = &authroutes.Service{AuthData: authDataService}
+	resourceRoutesService = &resourceroutes.Service{
+		AuthData:     authDataService,
+		ResourceData: resourceDataService,
+	}
+
+	r := mux.NewRouter()
+	setupRoutes(r)
 
 	serveAddress := ":" + os.Getenv("SERVE_PORT")
 	if err := http.ListenAndServe(serveAddress, r); err != nil {

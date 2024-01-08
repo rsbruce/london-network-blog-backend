@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 
@@ -41,9 +42,32 @@ func JSONMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func indexView(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("views/index.html"))
+
+	feedItems, err := resourceDataService.GetFeed(5)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	blurbContent, err := resourceDataService.GetTextContent("about")
+
+	// // accessToken := r.Header.Get("Authorization")
+	// // handle, err := authDataService.GetHandleFromAccessToken(accessToken)
+
+	feed := map[string]any{"Feed": feedItems, "BlurbContent": blurbContent}
+	tmpl.Execute(w, feed)
+
+	// userHandle := map[string]string{"Handle": handle}
+}
+
 func setupRoutes(r *mux.Router) {
 
-	r.Use(CorsMiddleWare, JSONMiddleware)
+	// r.Use(CorsMiddleWare, JSONMiddleware)
+
+	// HTMX
+	r.HandleFunc("/htmx", indexView).Methods("GET")
 
 	// STATIC FILES
 	staticFileSubrouter := r.PathPrefix("/static").Subrouter()
